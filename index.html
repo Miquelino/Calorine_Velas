@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Colorine Velas</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <nav class="nav-categories" aria-label="Categorias principais">
+        <a href="#shop" class="menu-link" data-route="shop" aria-label="Ver tudo">
+          <span class="hamburger" aria-hidden="true"></span>
+          Ver tudo
+        </a>
+        <a href="#shop">Perfumaria</a>
+        <a href="#shop">Sabonetes</a>
+        <a href="#shop">Casa</a>
+        <a href="#shop">Novidades</a>
+        <a href="#shop">Namorados</a>
+        <a href="#admin" class="admin-only" data-route="admin">Velas</a>
+      </nav>
+
+      <a class="brand" href="#shop" aria-label="Colorine Velas">
+        <img class="brand-logo" src="logo-colorine-transparent.png" alt="Colorine Velas" />
+      </a>
+
+      <div class="header-tools">
+        <label class="search-box header-search">
+          <input id="searchInput" type="search" placeholder="O que voce esta buscando hoje?" />
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="m21 21-4.4-4.4" />
+            <circle cx="11" cy="11" r="7" />
+          </svg>
+        </label>
+        <a href="#login" class="header-icon guest-only" data-route="login" aria-label="Entrar">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg>
+        </a>
+        <a href="#account" class="header-icon logged-only" data-route="account" aria-label="Minha conta">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg>
+        </a>
+        <button class="header-icon logged-only" id="menuLogoutButton" type="button" aria-label="Sair">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
+        </button>
+        <button class="header-icon favorite-button" type="button" aria-label="Favoritos">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" /></svg>
+        </button>
+        <button class="cart-button header-icon" id="openCart" type="button" aria-label="Abrir carrinho">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M6.2 6h15l-1.7 8.4a2 2 0 0 1-2 1.6H9.1a2 2 0 0 1-2-1.6L5.4 3H2" />
+            <circle cx="9" cy="20" r="1.4" />
+            <circle cx="18" cy="20" r="1.4" />
+          </svg>
+          <span id="cartCount">0</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+<section class="screen active shop-screen" id="shopScreen" data-screen="shop">
+        <div class="breadcrumb" aria-label="Caminho">
+          <a href="#shop">Inicio</a>
+          <span>Casa</span>
+          <strong>Vela</strong>
+        </div>
+
+        <div class="shop-heading">
+          <h1>VELA</h1>
+          <label class="sort-box">
+            <span aria-hidden="true">↕</span>
+            <select aria-label="Ordenar produtos">
+              <option>Posicao</option>
+              <option>Menor preco</option>
+              <option>Maior preco</option>
+              <option>Novidades</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="shop-layout">
+          <aside class="filter-panel" aria-label="Filtros de produtos">
+            <h2>Filtros</h2>
+            <details open>
+              <summary>Fragrancias</summary>
+              <label><input type="checkbox" /> Lavanda</label>
+              <label><input type="checkbox" /> Baunilha</label>
+              <label><input type="checkbox" /> Figo</label>
+            </details>
+            <details>
+              <summary>Volume</summary>
+              <label><input type="checkbox" /> 120g</label>
+              <label><input type="checkbox" /> 250g</label>
+            </details>
+            <details>
+              <summary>Linha</summary>
+              <label><input type="checkbox" /> Classica</label>
+              <label><input type="checkbox" /> Presente</label>
+            </details>
+            <details>
+              <summary>Marca</summary>
+              <label><input type="checkbox" /> Colorine</label>
+            </details>
+          </aside>
+
+          <div class="product-grid" id="productGrid"></div>
+        </div>
+      </section>
+
+      <section class="screen" id="adminScreen" data-screen="admin">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">gestao</p>
+            <h2>Cadastro de velas</h2>
+          </div>
+          <span class="session-pill" id="sessionPill">Visitante</span>
+        </div>
+
+        <div class="admin-locked" id="adminLocked">
+          <p class="eyebrow">acesso restrito</p>
+          <h3>Somente administradores podem cadastrar velas.</h3>
+          <p class="muted">Entre com a conta administrativa para liberar esta area.</p>
+          <a class="primary-action" href="#login">Ir para login</a>
+        </div>
+
+        <div class="admin-layout" id="adminLayout">
+          <form class="admin-form" id="productForm">
+            <input type="hidden" id="productId" />
+            <input type="hidden" id="productImageCurrent" />
+            <label>
+              Nome da vela
+              <input id="productName" required maxlength="48" placeholder="Ex: Brisa de Lavanda" />
+            </label>
+            <label>
+              Aroma
+              <input id="productScent" required maxlength="48" placeholder="Lavanda, baunilha, capim-limao" />
+            </label>
+            <div class="field-row">
+              <label>
+                Preco
+                <input id="productPrice" required min="1" step="0.01" type="number" placeholder="49.90" />
+              </label>
+              <label>
+                Estoque
+                <input id="productStock" required min="0" step="1" type="number" placeholder="12" />
+              </label>
+            </div>
+            <label>
+              Familia de cor
+              <select id="productColor">
+                <option value="rose">Rosa queimado</option>
+                <option value="sage">Verde sÃ¡lvia</option>
+                <option value="honey">Mel</option>
+                <option value="clay">Argila</option>
+                <option value="ocean">Azul suave</option>
+              </select>
+            </label>
+            <label>
+              Descricao
+              <textarea id="productDescription" required maxlength="160" placeholder="Conte o clima, o tamanho e a proposta da vela"></textarea>
+            </label>
+            <label>
+              Imagem da vela
+              <input id="productImage" type="file" accept="image/*" />
+            </label>
+            <div class="image-preview" id="productImagePreview">Sem imagem selecionada</div>
+            <div class="form-actions">
+              <button class="primary-action" type="submit">Salvar vela</button>
+              <button class="ghost-action" id="clearForm" type="button">Limpar</button>
+            </div>
+            <p class="form-message" id="productMessage"></p>
+          </form>
+
+          <div class="admin-list" id="adminList"></div>
+        </div>
+      </section>
+
+      <section class="screen" id="loginScreen" data-screen="login">
+        <div class="auth-panel">
+          <div class="auth-copy">
+            <p class="eyebrow">acesso</p>
+            <h2>Entrar na loja</h2>
+            <p class="muted">Entre com uma conta cadastrada para acompanhar pedidos e agilizar o checkout.</p>
+            <a class="auth-switch" href="#register">Ainda nao tenho conta</a>
+          </div>
+          <form id="loginForm" class="auth-form">
+            <label>
+              E-mail
+              <input id="loginEmail" required type="email" placeholder="voce@email.com" />
+            </label>
+            <label>
+              Senha
+              <input id="loginPassword" required minlength="6" type="password" placeholder="Sua senha" />
+            </label>
+            <button class="primary-action" type="submit">Entrar</button>
+            <button class="ghost-action" id="logoutButton" type="button">Sair</button>
+            <p class="hint-text">Admin teste: admin@colorine.com / admin123</p>
+            <p class="form-message" id="loginMessage"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="screen" id="registerScreen" data-screen="register">
+        <div class="auth-panel">
+          <div class="auth-copy">
+            <p class="eyebrow">cadastro de usuario</p>
+            <h2>Criar conta</h2>
+            <p class="muted">Cadastre os dados principais para simular uma area de cliente da loja.</p>
+            <a class="auth-switch" href="#login">Ja tenho conta</a>
+          </div>
+          <form id="registerForm" class="auth-form">
+            <div class="field-row">
+              <label>
+                Nome
+                <input id="registerName" required maxlength="70" placeholder="Seu nome" />
+              </label>
+              <label>
+                Telefone
+                <input id="registerPhone" required inputmode="tel" maxlength="20" placeholder="(11) 99999-9999" />
+              </label>
+            </div>
+            <label>
+              E-mail
+              <input id="registerEmail" required type="email" placeholder="voce@email.com" />
+            </label>
+            <div class="field-row">
+              <label>
+                Senha
+                <input id="registerPassword" required minlength="6" type="password" placeholder="Minimo 6 caracteres" />
+              </label>
+              <label>
+                Confirmar senha
+                <input id="registerPasswordConfirm" required minlength="6" type="password" placeholder="Repita a senha" />
+              </label>
+            </div>
+            <div class="address-block">
+              <div class="field-row address-zip-row">
+                <label>
+                  CEP
+                  <input id="registerCep" required inputmode="numeric" maxlength="9" placeholder="00000-000" autocomplete="postal-code" />
+                </label>
+                <label>
+                  Numero
+                  <input id="registerNumber" required maxlength="12" placeholder="123" autocomplete="address-line2" />
+                </label>
+              </div>
+              <label>
+                Rua
+                <input id="registerStreet" required maxlength="90" placeholder="Rua" autocomplete="address-line1" />
+              </label>
+              <div class="field-row">
+                <label>
+                  Bairro
+                  <input id="registerNeighborhood" required maxlength="50" placeholder="Bairro" />
+                </label>
+                <label>
+                  Complemento
+                  <input id="registerComplement" maxlength="50" placeholder="Apto, bloco, referencia" />
+                </label>
+              </div>
+              <div class="field-row city-state-row">
+                <label>
+                  Cidade
+                  <input id="registerCity" required maxlength="50" placeholder="Cidade" autocomplete="address-level2" />
+                </label>
+                <label>
+                  UF
+                  <input id="registerState" required maxlength="2" placeholder="SP" autocomplete="address-level1" />
+                </label>
+              </div>
+              <p class="hint-text" id="cepMessage">Digite o CEP para preencher o endereco.</p>
+            </div>
+            <label class="check-field">
+              <input id="registerMarketing" type="checkbox" />
+              <span>Quero receber novidades e colecoes especiais.</span>
+            </label>
+            <button class="primary-action" type="submit">Criar conta</button>
+            <p class="form-message" id="registerMessage"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="screen" id="accountScreen" data-screen="account">
+        <div class="auth-panel">
+          <div class="auth-copy">
+            <p class="eyebrow">minha conta</p>
+            <h2 id="accountTitle">Conta</h2>
+            <p class="muted">Confira os dados da sessao atual e acesse as areas disponiveis para o seu perfil.</p>
+          </div>
+          <div class="account-summary">
+            <div>
+              <span>Nome</span>
+              <strong id="accountName">-</strong>
+            </div>
+            <div>
+              <span>E-mail</span>
+              <strong id="accountEmail">-</strong>
+            </div>
+            <div>
+              <span>Telefone</span>
+              <strong id="accountPhone">-</strong>
+            </div>
+            <div class="account-address-card">
+              <span>Endereco</span>
+              <div class="account-address-grid">
+                <div>
+                  <small>CEP</small>
+                  <strong id="accountAddressCep">-</strong>
+                </div>
+                <div>
+                  <small>Rua</small>
+                  <strong id="accountAddressStreet">-</strong>
+                </div>
+                <div>
+                  <small>Numero</small>
+                  <strong id="accountAddressNumber">-</strong>
+                </div>
+                <div>
+                  <small>Bairro</small>
+                  <strong id="accountAddressNeighborhood">-</strong>
+                </div>
+                <div>
+                  <small>Complemento</small>
+                  <strong id="accountAddressComplement">-</strong>
+                </div>
+                <div>
+                  <small>Cidade/UF</small>
+                  <strong id="accountAddressCityState">-</strong>
+                </div>
+              </div>
+            </div>
+            <div>
+              <span>Perfil</span>
+              <strong id="accountRole">-</strong>
+            </div>
+            <div class="form-actions">
+              <a class="primary-action" href="#shop">Ir para loja</a>
+              <a class="secondary-action admin-only" href="#admin">Cadastrar velas</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+      <div class="cart-panel" role="dialog" aria-modal="true" aria-label="Carrinho">
+        <div class="cart-header">
+          <div>
+            <p class="eyebrow">pedido</p>
+            <h2>Carrinho</h2>
+          </div>
+          <button class="icon-button" id="closeCart" type="button" aria-label="Fechar carrinho">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="cart-items" id="cartItems"></div>
+
+        <form class="checkout" id="checkoutForm">
+          <div class="totals">
+            <span>Total</span>
+            <strong id="cartTotal">R$ 0,00</strong>
+          </div>
+          <label>
+            Forma de pagamento
+            <select id="paymentMethod">
+              <option value="pix">Pix</option>
+              <option value="card">Cartao de credito</option>
+              <option value="boleto">Boleto</option>
+            </select>
+          </label>
+          <label>
+            Entrega
+            <input id="deliveryAddress" required placeholder="Rua, numero, bairro e cidade" />
+          </label>
+          <button class="primary-action" type="submit">Finalizar pedido</button>
+          <p class="checkout-message" id="checkoutMessage"></p>
+        </form>
+      </div>
+    </aside>
+
+    <template id="productTemplate">
+      <article class="product-card">
+        <div class="product-art">
+          <span class="product-badge">Novidade</span>
+          <button class="product-favorite" type="button" aria-label="Adicionar aos favoritos">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" /></svg>
+          </button>
+          <img class="product-photo" alt="" />
+          <span class="product-flame"></span>
+          <span class="product-jar"></span>
+        </div>
+        <div class="product-info">
+          <span class="tag"></span>
+          <h3></h3>
+          <p></p>
+          <div class="product-footer">
+            <strong></strong>
+            <button type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7Z" /><path d="M9 7a3 3 0 0 1 6 0" /></svg>
+              <span>Adicionar</span>
+            </button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
+
+
+
