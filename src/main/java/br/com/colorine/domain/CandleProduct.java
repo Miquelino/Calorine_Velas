@@ -33,12 +33,29 @@ public class CandleProduct {
   @Column(nullable = false, length = 30)
   private String color;
 
+  @Column(nullable = false, length = 20)
+  private String size = "120g";
+
+  @Column(nullable = false, length = 30)
+  private String occasion = "classica";
+
+  @Column(nullable = false, length = 30)
+  private String mood = "aconchegante";
+
   @Column(nullable = false)
   private boolean active = true;
 
   @Lob
   @Column(columnDefinition = "CLOB")
   private String imageUrl;
+
+  @Lob
+  @Column(columnDefinition = "CLOB")
+  private String extraImageUrlOne;
+
+  @Lob
+  @Column(columnDefinition = "CLOB")
+  private String extraImageUrlTwo;
 
   public Long getId() {
     return id;
@@ -96,12 +113,52 @@ public class CandleProduct {
     this.color = color;
   }
 
+  public String getSize() {
+    return size;
+  }
+
+  public void setSize(String size) {
+    this.size = size;
+  }
+
+  public String getOccasion() {
+    return occasion;
+  }
+
+  public void setOccasion(String occasion) {
+    this.occasion = occasion;
+  }
+
+  public String getMood() {
+    return mood;
+  }
+
+  public void setMood(String mood) {
+    this.mood = mood;
+  }
+
   public String getImageUrl() {
     return imageUrl;
   }
 
   public void setImageUrl(String imageUrl) {
     this.imageUrl = imageUrl;
+  }
+
+  public String getExtraImageUrlOne() {
+    return extraImageUrlOne;
+  }
+
+  public void setExtraImageUrlOne(String extraImageUrlOne) {
+    this.extraImageUrlOne = extraImageUrlOne;
+  }
+
+  public String getExtraImageUrlTwo() {
+    return extraImageUrlTwo;
+  }
+
+  public void setExtraImageUrlTwo(String extraImageUrlTwo) {
+    this.extraImageUrlTwo = extraImageUrlTwo;
   }
 
   public boolean isActive() {

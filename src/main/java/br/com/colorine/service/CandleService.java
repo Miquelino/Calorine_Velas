@@ -57,7 +57,12 @@ public class CandleService {
     candle.setPrice(request.price());
     candle.setStock(request.stock());
     candle.setColor(request.color().trim());
+    candle.setSize(request.size().trim());
+    candle.setOccasion(request.occasion().trim());
+    candle.setMood(request.mood().trim());
     candle.setImageUrl(request.imageUrl());
+    candle.setExtraImageUrlOne(request.extraImageUrlOne());
+    candle.setExtraImageUrlTwo(request.extraImageUrlTwo());
   }
 
   private CandleResponse toResponse(CandleProduct candle) {
@@ -69,7 +74,12 @@ public class CandleService {
         candle.getPrice(),
         candle.getStock(),
         candle.getColor(),
+        candle.getSize(),
+        candle.getOccasion(),
+        candle.getMood(),
         candle.getImageUrl(),
+        candle.getExtraImageUrlOne(),
+        candle.getExtraImageUrlTwo(),
         candle.isActive()
     );
   }

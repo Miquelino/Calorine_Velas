@@ -14,6 +14,11 @@ public record CandleRequest(
     @NotNull @DecimalMin("0.01") BigDecimal price,
     @Min(0) int stock,
     @NotBlank @Size(max = 30) String color,
-    String imageUrl
+    @NotBlank @Size(max = 20) String size,
+    @NotBlank @Size(max = 30) String occasion,
+    @NotBlank @Size(max = 30) String mood,
+    String imageUrl,
+    String extraImageUrlOne,
+    String extraImageUrlTwo
 ) {
 }

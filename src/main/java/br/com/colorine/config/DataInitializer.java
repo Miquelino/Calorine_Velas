@@ -38,7 +38,10 @@ public class DataInitializer {
             "Vela calmante em pote de vidro, ideal para banho relaxante ou leitura no fim do dia.",
             "54.90",
             18,
-            "sage"
+            "sage",
+            "120g",
+            "classica",
+            "relaxante"
         ));
         candles.save(candle(
             "Doce Baunilha",
@@ -46,7 +49,10 @@ public class DataInitializer {
             "Aroma acolhedor e cremoso, feito para deixar a casa com cheiro de sobremesa elegante.",
             "49.90",
             24,
-            "honey"
+            "honey",
+            "120g",
+            "classica",
+            "aconchegante"
         ));
         candles.save(candle(
             "Figo Rosado",
@@ -54,7 +60,10 @@ public class DataInitializer {
             "Uma vela marcante para presente, com perfume floral frutado e acabamento artesanal.",
             "64.90",
             10,
-            "rose"
+            "rose",
+            "250g",
+            "presente",
+            "aconchegante"
         ));
         candles.save(candle(
             "Mar de Linho",
@@ -62,7 +71,10 @@ public class DataInitializer {
             "Fresca e limpa, perfeita para sala, lavabo e ambientes que pedem leveza.",
             "59.90",
             14,
-            "ocean"
+            "ocean",
+            "250g",
+            "classica",
+            "relaxante"
         ));
       }
     };
@@ -74,7 +86,10 @@ public class DataInitializer {
       String description,
       String price,
       int stock,
-      String color
+      String color,
+      String size,
+      String occasion,
+      String mood
   ) {
     CandleProduct candle = new CandleProduct();
     candle.setName(name);
@@ -83,6 +98,9 @@ public class DataInitializer {
     candle.setPrice(new BigDecimal(price));
     candle.setStock(stock);
     candle.setColor(color);
+    candle.setSize(size);
+    candle.setOccasion(occasion);
+    candle.setMood(mood);
     candle.setActive(true);
     return candle;
   }

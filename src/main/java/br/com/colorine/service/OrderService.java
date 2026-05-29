@@ -11,6 +11,7 @@ import br.com.colorine.web.dto.OrderItemRequest;
 import br.com.colorine.web.dto.OrderRequest;
 import br.com.colorine.web.dto.OrderResponse;
 import java.math.BigDecimal;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,6 +64,17 @@ public class OrderService {
 
     order.setTotal(total);
     return toResponse(orders.save(order));
+  }
+
+  @Transactional(readOnly = true)
+  public List<OrderResponse> listByCustomer(Long customerId) {
+    if (!users.existsById(customerId)) {
+      throw new IllegalArgumentException("Cliente nao encontrado.");
+    }
+
+    return orders.findByCustomerIdOrderByCreatedAtDesc(customerId).stream()
+        .map(this::toResponse)
+        .toList();
   }
 
   private OrderResponse toResponse(CustomerOrder order) {

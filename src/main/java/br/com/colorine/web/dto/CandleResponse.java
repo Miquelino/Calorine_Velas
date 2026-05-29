@@ -10,7 +10,12 @@ public record CandleResponse(
     BigDecimal price,
     int stock,
     String color,
+    String size,
+    String occasion,
+    String mood,
     String imageUrl,
+    String extraImageUrlOne,
+    String extraImageUrlTwo,
     boolean active
 ) {
 }

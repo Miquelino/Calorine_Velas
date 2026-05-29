@@ -42,8 +42,9 @@
         <button class="header-icon logged-only" id="menuLogoutButton" type="button" aria-label="Sair">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
         </button>
-        <button class="header-icon favorite-button" type="button" aria-label="Favoritos">
+        <button class="header-icon favorite-button" id="openFavorites" type="button" aria-label="Abrir favoritos">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" /></svg>
+          <span id="favoriteCount">0</span>
         </button>
         <button class="cart-button header-icon" id="openCart" type="button" aria-label="Abrir carrinho">
           <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -64,15 +65,31 @@
           <strong>Velas artesanais</strong>
         </div>
 
+        <section class="atelier-note" aria-label="Colorine">
+          <div>
+            <p class="eyebrow">colorine atelie</p>
+            <h2>Feito para perfumar pequenos rituais.</h2>
+          </div>
+          <p>Velas em tons quentes, aromas afetivos e acabamento artesanal para casa, presente e pausa.</p>
+        </section>
+
+        <section class="about-colorine" aria-label="Sobre a Colorine">
+          <div>
+            <p class="eyebrow">sobre a colorine</p>
+            <h2>Aroma, cor e cuidado em pequenos lotes.</h2>
+          </div>
+          <p>A Colorine nasce do desejo de transformar momentos simples em rituais de aconchego. Cada vela combina fragrancias afetivas, cores suaves e acabamento manual para perfumar a casa com calma e presenca.</p>
+        </section>
+
         <div class="shop-heading">
           <h1>Velas artesanais</h1>
           <label class="sort-box">
             <span aria-hidden="true">Ordenar</span>
-            <select aria-label="Ordenar produtos">
-              <option>Posicao</option>
-              <option>Menor preco</option>
-              <option>Maior preco</option>
-              <option>Novidades</option>
+            <select id="sortProducts" aria-label="Ordenar produtos">
+              <option value="position">Posicao</option>
+              <option value="price-asc">Menor preco</option>
+              <option value="price-desc">Maior preco</option>
+              <option value="newest">Novidades</option>
             </select>
           </label>
         </div>
@@ -82,29 +99,93 @@
             <h2>Filtros</h2>
             <details open>
               <summary>Aromas</summary>
-              <label><input type="checkbox" /> Lavanda</label>
-              <label><input type="checkbox" /> Baunilha</label>
-              <label><input type="checkbox" /> Figo</label>
+              <label><input type="checkbox" data-filter="scent" value="lavanda" /> Lavanda</label>
+              <label><input type="checkbox" data-filter="scent" value="baunilha" /> Baunilha</label>
+              <label><input type="checkbox" data-filter="scent" value="figo" /> Figo</label>
             </details>
             <details>
               <summary>Tamanho</summary>
-              <label><input type="checkbox" /> 120g</label>
-              <label><input type="checkbox" /> 250g</label>
+              <label><input type="checkbox" data-filter="size" value="120g" /> 120g</label>
+              <label><input type="checkbox" data-filter="size" value="250g" /> 250g</label>
             </details>
             <details>
               <summary>Ocasiao</summary>
-              <label><input type="checkbox" /> Classica</label>
-              <label><input type="checkbox" /> Presente</label>
+              <label><input type="checkbox" data-filter="occasion" value="classica" /> Classica</label>
+              <label><input type="checkbox" data-filter="occasion" value="presente" /> Presente</label>
             </details>
             <details>
               <summary>Sensacao</summary>
-              <label><input type="checkbox" /> Relaxante</label>
-              <label><input type="checkbox" /> Aconchegante</label>
+              <label><input type="checkbox" data-filter="mood" value="relaxante" /> Relaxante</label>
+              <label><input type="checkbox" data-filter="mood" value="aconchegante" /> Aconchegante</label>
             </details>
           </aside>
 
           <div class="product-grid" id="productGrid"></div>
         </div>
+      </section>
+
+      <section class="screen product-detail-screen" id="productDetailScreen" data-screen="product">
+        <div class="breadcrumb" aria-label="Caminho">
+          <a href="#shop">Inicio</a>
+          <span>Velas artesanais</span>
+          <strong id="detailBreadcrumb">Produto</strong>
+        </div>
+
+        <div class="product-detail">
+          <div class="detail-gallery">
+            <div class="detail-thumbs" id="detailThumbs" aria-label="Miniaturas do produto"></div>
+            <div class="detail-media" id="detailMedia">
+              <button class="product-favorite detail-favorite" id="detailFavorite" type="button" aria-label="Adicionar aos favoritos">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" /></svg>
+              </button>
+              <img id="detailImage" alt="" />
+              <span class="product-flame"></span>
+              <span class="product-jar"></span>
+            </div>
+          </div>
+
+          <div class="detail-copy">
+            <p class="eyebrow" id="detailScent">aroma</p>
+            <h1 id="detailName">Produto</h1>
+            <p id="detailDescription"></p>
+
+            <div class="detail-facts">
+              <div>
+                <span>Aroma</span>
+                <strong id="detailAroma">-</strong>
+              </div>
+              <div>
+                <span>Tamanho</span>
+                <strong id="detailSize">-</strong>
+              </div>
+              <div>
+                <span>Estoque</span>
+                <strong id="detailStock">-</strong>
+              </div>
+              <div>
+                <span>Ocasião</span>
+                <strong id="detailOccasion">-</strong>
+              </div>
+              <div>
+                <span>Sensação</span>
+                <strong id="detailMood">-</strong>
+              </div>
+            </div>
+
+            <div class="detail-buy">
+              <strong id="detailPrice">R$ 0,00</strong>
+              <button class="primary-action" id="detailAddToCart" type="button">Adicionar ao carrinho</button>
+            </div>
+          </div>
+        </div>
+
+        <section class="related-products" aria-label="Produtos relacionados">
+          <div class="related-heading">
+            <p class="eyebrow">continue explorando</p>
+            <h2>Voce tambem pode gostar</h2>
+          </div>
+          <div class="related-grid" id="relatedProducts"></div>
+        </section>
       </section>
 
       <section class="screen" id="adminScreen" data-screen="admin">
@@ -127,6 +208,8 @@
           <form class="admin-form" id="productForm">
             <input type="hidden" id="productId" />
             <input type="hidden" id="productImageCurrent" />
+            <input type="hidden" id="productExtraImageOneCurrent" />
+            <input type="hidden" id="productExtraImageTwoCurrent" />
             <label>
               Nome da vela
               <input id="productName" required maxlength="48" placeholder="Ex: Brisa de Lavanda" />
@@ -155,6 +238,29 @@
                 <option value="ocean">Azul suave</option>
               </select>
             </label>
+            <div class="field-row">
+              <label>
+                Tamanho
+                <select id="productSize">
+                  <option value="120g">120g</option>
+                  <option value="250g">250g</option>
+                </select>
+              </label>
+              <label>
+                Sensacao
+                <select id="productMood">
+                  <option value="aconchegante">Aconchegante</option>
+                  <option value="relaxante">Relaxante</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Ocasiao
+              <select id="productOccasion">
+                <option value="classica">Classica</option>
+                <option value="presente">Presente</option>
+              </select>
+            </label>
             <label>
               Descricao
               <textarea id="productDescription" required maxlength="160" placeholder="Conte o clima, o tamanho e a proposta da vela"></textarea>
@@ -164,6 +270,20 @@
               <input id="productImage" type="file" accept="image/*" />
             </label>
             <div class="image-preview" id="productImagePreview">Sem imagem selecionada</div>
+            <div class="field-row">
+              <label>
+                Miniatura extra 1
+                <input id="productExtraImageOne" type="file" accept="image/*" />
+              </label>
+              <label>
+                Miniatura extra 2
+                <input id="productExtraImageTwo" type="file" accept="image/*" />
+              </label>
+            </div>
+            <div class="field-row">
+              <div class="image-preview" id="productExtraImageOnePreview">Sem imagem extra</div>
+              <div class="image-preview" id="productExtraImageTwoPreview">Sem imagem extra</div>
+            </div>
             <div class="form-actions">
               <button class="primary-action" type="submit">Salvar vela</button>
               <button class="ghost-action" id="clearForm" type="button">Limpar</button>
@@ -338,6 +458,16 @@
               <a class="secondary-action admin-only" href="#admin">Cadastrar velas</a>
             </div>
           </div>
+
+          <section class="account-orders">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">historico</p>
+                <h2>Meus pedidos</h2>
+              </div>
+            </div>
+            <div class="order-list" id="accountOrders"></div>
+          </section>
         </div>
       </section>
     </main>
@@ -359,27 +489,93 @@
         <div class="cart-items" id="cartItems"></div>
 
         <form class="checkout" id="checkoutForm">
+          <div class="checkout-summary">
+            <div>
+              <span>Itens</span>
+              <strong id="checkoutItems">0</strong>
+            </div>
+            <div>
+              <span>Subtotal</span>
+              <strong id="cartSubtotal">R$ 0,00</strong>
+            </div>
+            <div>
+              <span>Entrega</span>
+              <strong id="cartDelivery">A calcular</strong>
+            </div>
+          </div>
           <div class="totals">
             <span>Total</span>
             <strong id="cartTotal">R$ 0,00</strong>
           </div>
-          <label>
-            Forma de pagamento
-            <select id="paymentMethod">
-              <option value="pix">Pix</option>
-              <option value="card">Cartao de credito</option>
-              <option value="boleto">Boleto</option>
-            </select>
-          </label>
-          <label>
-            Entrega
-            <input id="deliveryAddress" required placeholder="Rua, numero, bairro e cidade" />
-          </label>
-          <button class="primary-action" type="submit">Finalizar pedido</button>
+
+          <section class="checkout-step">
+            <span>1</span>
+            <div>
+              <h3>Entrega</h3>
+              <div class="shipping-row">
+                <label>
+                  CEP
+                  <input id="cartCep" inputmode="numeric" maxlength="9" placeholder="00000-000" />
+                </label>
+                <button class="ghost-action" id="calculateShipping" type="button">OK</button>
+              </div>
+              <p class="hint-text" id="shippingMessage">Informe o CEP para calcular uma entrega estimada.</p>
+              <label>
+                Endereco
+                <input id="deliveryAddress" required placeholder="Rua, numero, bairro e cidade" />
+              </label>
+            </div>
+          </section>
+
+          <section class="checkout-step">
+            <span>2</span>
+            <div>
+              <h3>Pagamento</h3>
+              <label>
+                Forma de pagamento
+                <select id="paymentMethod">
+                  <option value="pix">Pix</option>
+                  <option value="card">Cartao de credito</option>
+                  <option value="boleto">Boleto</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="checkout-step">
+            <span>3</span>
+            <div>
+              <h3>Confirmacao</h3>
+              <button class="primary-action" type="submit">Finalizar pedido</button>
+            </div>
+          </section>
           <p class="checkout-message" id="checkoutMessage"></p>
         </form>
       </div>
     </aside>
+
+    <aside class="cart-drawer favorites-drawer" id="favoritesDrawer" aria-hidden="true">
+      <div class="cart-panel" role="dialog" aria-modal="true" aria-label="Favoritos">
+        <div class="cart-header">
+          <div>
+            <p class="eyebrow">selecionados</p>
+            <h2>Favoritos</h2>
+          </div>
+          <button class="icon-button" id="closeFavorites" type="button" aria-label="Fechar favoritos">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="cart-items favorite-items" id="favoriteItems"></div>
+      </div>
+    </aside>
+
+    <footer class="site-footer">
+      <span>Colorine Velas</span>
+      <strong>Desenvolvido por Reynaldo Miquelino Neto</strong>
+    </footer>
 
     <template id="productTemplate">
       <article class="product-card">
