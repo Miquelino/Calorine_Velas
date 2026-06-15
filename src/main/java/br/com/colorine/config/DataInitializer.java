@@ -6,28 +6,34 @@ import br.com.colorine.domain.UserRole;
 import br.com.colorine.repository.CandleProductRepository;
 import br.com.colorine.repository.UserAccountRepository;
 import java.math.BigDecimal;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
+@Profile("!prod")
 public class DataInitializer {
 
   @Bean
   CommandLineRunner seedData(
       UserAccountRepository users,
       CandleProductRepository candles,
-      PasswordEncoder passwordEncoder
+      PasswordEncoder passwordEncoder,
+      @Value("${app.admin.email:admin@calorine.com}") String adminEmail,
+      @Value("${app.admin.password:admin123}") String adminPassword
   ) {
     return args -> {
-      if (!users.existsByEmail("admin@colorine.com")) {
+      String normalizedAdminEmail = adminEmail.trim().toLowerCase();
+      if (!users.existsByEmail(normalizedAdminEmail)) {
         UserAccount admin = new UserAccount();
-        admin.setName("Administradora Colorine");
-        admin.setEmail("admin@colorine.com");
+        admin.setName("Administradora Calorine");
+        admin.setEmail(normalizedAdminEmail);
         admin.setPhone("");
         admin.setRole(UserRole.ADMIN);
-        admin.setPasswordHash(passwordEncoder.encode("admin123"));
+        admin.setPasswordHash(passwordEncoder.encode(adminPassword));
         users.save(admin);
       }
 

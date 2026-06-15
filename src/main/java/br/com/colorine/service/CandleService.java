@@ -24,6 +24,13 @@ public class CandleService {
         .toList();
   }
 
+  @Transactional(readOnly = true)
+  public List<CandleResponse> listAll() {
+    return candles.findAllByOrderByName().stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
   @Transactional
   public CandleResponse create(CandleRequest request) {
     CandleProduct candle = new CandleProduct();
@@ -43,6 +50,13 @@ public class CandleService {
   public void deactivate(Long id) {
     CandleProduct candle = findById(id);
     candle.setActive(false);
+  }
+
+  @Transactional
+  public CandleResponse setActive(Long id, boolean active) {
+    CandleProduct candle = findById(id);
+    candle.setActive(active);
+    return toResponse(candle);
   }
 
   private CandleProduct findById(Long id) {

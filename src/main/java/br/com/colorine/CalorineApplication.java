@@ -4,9 +4,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ColorineApplication {
+public class CalorineApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(ColorineApplication.class, args);
+    SpringApplication.run(CalorineApplication.class, args);
   }
 }

@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import java.math.BigDecimal;
 
 @Entity
@@ -33,28 +32,25 @@ public class CandleProduct {
   @Column(nullable = false, length = 30)
   private String color;
 
-  @Column(nullable = false, length = 20)
+  @Column(nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT '120g'")
   private String size = "120g";
 
-  @Column(nullable = false, length = 30)
+  @Column(nullable = false, length = 30, columnDefinition = "VARCHAR(30) DEFAULT 'classica'")
   private String occasion = "classica";
 
-  @Column(nullable = false, length = 30)
+  @Column(nullable = false, length = 30, columnDefinition = "VARCHAR(30) DEFAULT 'aconchegante'")
   private String mood = "aconchegante";
 
   @Column(nullable = false)
   private boolean active = true;
 
-  @Lob
-  @Column(columnDefinition = "CLOB")
+  @Column(columnDefinition = "TEXT")
   private String imageUrl;
 
-  @Lob
-  @Column(columnDefinition = "CLOB")
+  @Column(columnDefinition = "TEXT")
   private String extraImageUrlOne;
 
-  @Lob
-  @Column(columnDefinition = "CLOB")
+  @Column(columnDefinition = "TEXT")
   private String extraImageUrlTwo;
 
   public Long getId() {

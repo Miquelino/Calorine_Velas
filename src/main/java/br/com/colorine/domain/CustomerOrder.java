@@ -45,6 +45,26 @@ public class CustomerOrder {
   @Column(nullable = false, precision = 10, scale = 2)
   private BigDecimal total = BigDecimal.ZERO;
 
+  @Column(length = 30)
+  private String couponCode;
+
+  @Column(nullable = false, precision = 10, scale = 2)
+  private BigDecimal discountTotal = BigDecimal.ZERO;
+
+  @Column(length = 12)
+  private String shippingCep;
+
+  @Column(nullable = false, precision = 10, scale = 2)
+  private BigDecimal shippingCost = BigDecimal.ZERO;
+
+  private Integer shippingDays;
+
+  @Column(length = 30)
+  private String paymentSimulation;
+
+  @Column(length = 220)
+  private String emailNotification;
+
   @Column(nullable = false)
   private Instant createdAt = Instant.now();
 
@@ -102,6 +122,62 @@ public class CustomerOrder {
 
   public void setTotal(BigDecimal total) {
     this.total = total;
+  }
+
+  public String getCouponCode() {
+    return couponCode;
+  }
+
+  public void setCouponCode(String couponCode) {
+    this.couponCode = couponCode;
+  }
+
+  public BigDecimal getDiscountTotal() {
+    return discountTotal;
+  }
+
+  public void setDiscountTotal(BigDecimal discountTotal) {
+    this.discountTotal = discountTotal;
+  }
+
+  public String getShippingCep() {
+    return shippingCep;
+  }
+
+  public void setShippingCep(String shippingCep) {
+    this.shippingCep = shippingCep;
+  }
+
+  public BigDecimal getShippingCost() {
+    return shippingCost;
+  }
+
+  public void setShippingCost(BigDecimal shippingCost) {
+    this.shippingCost = shippingCost;
+  }
+
+  public Integer getShippingDays() {
+    return shippingDays;
+  }
+
+  public void setShippingDays(Integer shippingDays) {
+    this.shippingDays = shippingDays;
+  }
+
+  public String getPaymentSimulation() {
+    return paymentSimulation;
+  }
+
+  public void setPaymentSimulation(String paymentSimulation) {
+    this.paymentSimulation = paymentSimulation;
+  }
+
+  public String getEmailNotification() {
+    return emailNotification;
+  }
+
+  public void setEmailNotification(String emailNotification) {
+    this.emailNotification = emailNotification;
   }
 
   public Instant getCreatedAt() {

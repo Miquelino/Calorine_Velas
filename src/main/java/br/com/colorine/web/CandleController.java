@@ -32,6 +32,12 @@ public class CandleController {
     return candleService.listActive();
   }
 
+  @GetMapping("/admin")
+  @PreAuthorize("hasRole('ADMIN')")
+  public List<CandleResponse> listAdmin() {
+    return candleService.listAll();
+  }
+
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize("hasRole('ADMIN')")
@@ -43,6 +49,12 @@ public class CandleController {
   @PreAuthorize("hasRole('ADMIN')")
   public CandleResponse update(@PathVariable Long id, @Valid @RequestBody CandleRequest request) {
     return candleService.update(id, request);
+  }
+
+  @PutMapping("/{id}/active/{active}")
+  @PreAuthorize("hasRole('ADMIN')")
+  public CandleResponse setActive(@PathVariable Long id, @PathVariable boolean active) {
+    return candleService.setActive(id, active);
   }
 
   @DeleteMapping("/{id}")

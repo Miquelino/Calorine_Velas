@@ -1,8 +1,8 @@
-# Colorine Velas
+# Calorine Velas
 
 E-commerce de velas artesanais com frontend estatico e base Spring Boot.
 
-## Como rodar
+## Como rodar em desenvolvimento
 
 ```powershell
 mvn spring-boot:run
@@ -14,53 +14,57 @@ Depois acesse:
 http://localhost:8080
 ```
 
-## Acesso administrativo
+O perfil padrao e `dev`, usando H2 em arquivo:
 
 ```text
-E-mail: admin@colorine.com
+data/calorine.mv.db
+```
+
+## Acesso administrativo de desenvolvimento
+
+```text
+E-mail: admin@calorine.com
 Senha: admin123
 ```
 
-Somente usuarios com perfil `ADMIN` podem criar, editar ou remover velas.
-
-## Endpoints iniciais
-
-```text
-POST /api/auth/register
-POST /api/auth/login
-GET  /api/candles
-POST /api/candles        ADMIN
-PUT  /api/candles/{id}   ADMIN
-DELETE /api/candles/{id} ADMIN
-POST /api/orders         CUSTOMER ou ADMIN
-```
+Esse usuario de teste nao e criado no perfil `prod`.
 
 ## Banco de dados
 
-O projeto usa H2 em arquivo. Ao rodar a aplicacao, o Spring cria o banco e as tabelas automaticamente em:
+O projeto agora usa Flyway para criar e versionar o schema.
+
+Perfil `dev`:
 
 ```text
-data/colorine.mv.db
+H2 local em arquivo
 ```
 
-No DBeaver, crie uma conexao H2 com:
+Perfil `prod`:
 
 ```text
-Driver: H2 Embedded
-JDBC URL: jdbc:h2:file:C:/Users/reyna/Desktop/Projetos/Java/Alura/Colorine/data/colorine;AUTO_SERVER=TRUE
-User: sa
-Password: deixe em branco
+PostgreSQL
 ```
 
-O console web do H2 tambem fica disponivel enquanto a aplicacao estiver rodando:
+Variaveis esperadas em producao:
 
 ```text
-http://localhost:8080/h2-console
+APP_PROFILE=prod
+DATABASE_URL=jdbc:postgresql://localhost:5432/calorine
+DATABASE_USERNAME=calorine
+DATABASE_PASSWORD=calorine
+JWT_SECRET=troque-por-um-segredo-grande-e-seguro
 ```
 
-No console web, use a mesma URL:
+## Autenticacao
+
+O login retorna um token JWT. O frontend usa:
 
 ```text
-jdbc:h2:file:./data/colorine;AUTO_SERVER=TRUE
+Authorization: Bearer <token>
 ```
-# Calorine_Velas
+
+## Testes
+
+```powershell
+mvn test
+```

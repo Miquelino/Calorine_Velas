@@ -1,9 +1,9 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Colorine Velas</title>
+    <title>Calorine Velas</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -15,14 +15,14 @@
         </a>
         <a href="#shop">Aromas</a>
         <a href="#shop">Presentes</a>
-        <a href="#shop">Ambientes</a>
-        <a href="#shop">Novidades</a>
-        <a href="#shop">Kits</a>
+        <a href="#about" data-route="about">Sobre</a>
+        <a href="#care" data-route="care">Cuidados</a>
+        <a href="#faq" data-route="faq">FAQ</a>
         <a href="#admin" class="admin-only" data-route="admin">Velas</a>
       </nav>
 
-      <a class="brand" href="#shop" aria-label="Colorine Velas">
-        <img class="brand-logo" src="logo-colorine-transparent.png" alt="Colorine Velas" />
+      <a class="brand" href="#shop" aria-label="Calorine Velas">
+        <img class="brand-logo" src="logo-colorine-transparent.png" alt="Calorine Velas" />
       </a>
 
       <div class="header-tools">
@@ -65,20 +65,20 @@
           <strong>Velas artesanais</strong>
         </div>
 
-        <section class="atelier-note" aria-label="Colorine">
+        <section class="atelier-note" aria-label="Calorine">
           <div>
-            <p class="eyebrow">colorine atelie</p>
+            <p class="eyebrow">calorine atelie</p>
             <h2>Feito para perfumar pequenos rituais.</h2>
           </div>
           <p>Velas em tons quentes, aromas afetivos e acabamento artesanal para casa, presente e pausa.</p>
         </section>
 
-        <section class="about-colorine" aria-label="Sobre a Colorine">
+        <section class="about-colorine" aria-label="Sobre a Calorine">
           <div>
-            <p class="eyebrow">sobre a colorine</p>
+            <p class="eyebrow">sobre a calorine</p>
             <h2>Aroma, cor e cuidado em pequenos lotes.</h2>
           </div>
-          <p>A Colorine nasce do desejo de transformar momentos simples em rituais de aconchego. Cada vela combina fragrancias afetivas, cores suaves e acabamento manual para perfumar a casa com calma e presenca.</p>
+          <p>A Calorine nasce do desejo de transformar momentos simples em rituais de aconchego. Cada vela combina fragrancias afetivas, cores suaves e acabamento manual para perfumar a casa com calma e presenca.</p>
         </section>
 
         <div class="shop-heading">
@@ -118,6 +118,18 @@
               <label><input type="checkbox" data-filter="mood" value="relaxante" /> Relaxante</label>
               <label><input type="checkbox" data-filter="mood" value="aconchegante" /> Aconchegante</label>
             </details>
+            <details>
+              <summary>Preco</summary>
+              <label><input type="checkbox" data-filter="price" value="ate-55" /> Ate R$ 55</label>
+              <label><input type="checkbox" data-filter="price" value="55-65" /> R$ 55 a R$ 65</label>
+              <label><input type="checkbox" data-filter="price" value="acima-65" /> Acima de R$ 65</label>
+            </details>
+            <details>
+              <summary>Disponibilidade</summary>
+              <label><input type="checkbox" data-filter="stock" value="available" /> Em estoque</label>
+              <label><input type="checkbox" data-filter="stock" value="low" /> Ultimas unidades</label>
+            </details>
+            <button class="clear-filters" id="clearFilters" type="button">Limpar filtros</button>
           </aside>
 
           <div class="product-grid" id="productGrid"></div>
@@ -176,6 +188,29 @@
               <strong id="detailPrice">R$ 0,00</strong>
               <button class="primary-action" id="detailAddToCart" type="button">Adicionar ao carrinho</button>
             </div>
+
+            <section class="review-panel" aria-label="Avaliacoes do produto">
+              <div>
+                <span>Avaliacoes</span>
+                <strong id="reviewSummary">Sem avaliacoes ainda</strong>
+              </div>
+              <label>
+                Sua nota
+                <select id="reviewRating">
+                  <option value="5">5 estrelas</option>
+                  <option value="4">4 estrelas</option>
+                  <option value="3">3 estrelas</option>
+                  <option value="2">2 estrelas</option>
+                  <option value="1">1 estrela</option>
+                </select>
+              </label>
+              <label>
+                Comentario
+                <textarea id="reviewComment" maxlength="160" placeholder="Conte o que achou do aroma"></textarea>
+              </label>
+              <button class="ghost-action" id="saveReview" type="button">Salvar avaliacao</button>
+              <div class="review-list" id="reviewList"></div>
+            </section>
           </div>
         </div>
 
@@ -188,110 +223,356 @@
         </section>
       </section>
 
-      <section class="screen" id="adminScreen" data-screen="admin">
-        <div class="section-heading">
+      <section class="screen institutional-screen" id="aboutScreen" data-screen="about">
+        <div class="breadcrumb" aria-label="Caminho">
+          <a href="#shop">Inicio</a>
+          <strong>Sobre</strong>
+        </div>
+        <section class="institutional-hero">
+          <p class="eyebrow">sobre a calorine</p>
+          <h1>Velas feitas para transformar casa em ritual.</h1>
+          <p>A Calorine combina aromas afetivos, cores suaves e producao em pequenos lotes para criar velas com presenca, cuidado e acabamento artesanal.</p>
+        </section>
+        <div class="institutional-grid">
+          <article>
+            <span>01</span>
+            <h2>Pequenos lotes</h2>
+            <p>Cada leva e pensada para manter consistencia de perfume, acabamento e identidade visual.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h2>Aromas afetivos</h2>
+            <p>Lavanda, baunilha, figo e notas limpas aparecem em composicoes para descanso, presente e rotina.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h2>Presente com calma</h2>
+            <p>A experiencia privilegia uma compra simples, bonita e acolhedora do primeiro clique ao checkout.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen institutional-screen" id="careScreen" data-screen="care">
+        <div class="breadcrumb" aria-label="Caminho">
+          <a href="#shop">Inicio</a>
+          <strong>Cuidados com a vela</strong>
+        </div>
+        <section class="institutional-hero compact">
+          <p class="eyebrow">cuidados</p>
+          <h1>Acenda melhor, perfume por mais tempo.</h1>
+        </section>
+        <div class="care-list">
+          <article>
+            <h2>Primeira queima</h2>
+            <p>Deixe a cera derreter ate as bordas do recipiente antes de apagar. Isso ajuda a evitar tuneis.</p>
+          </article>
+          <article>
+            <h2>Pavio</h2>
+            <p>Apare o pavio antes de reacender. Uma chama menor deixa a queima mais limpa e estavel.</p>
+          </article>
+          <article>
+            <h2>Seguranca</h2>
+            <p>Use em superficie firme, longe de tecidos, criancas e correntes de ar. Nunca deixe a vela sem supervisao.</p>
+          </article>
+          <article>
+            <h2>Tempo de uso</h2>
+            <p>Evite manter acesa por muitas horas seguidas. Apague, espere esfriar e reacenda quando quiser continuar.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen institutional-screen" id="faqScreen" data-screen="faq">
+        <div class="breadcrumb" aria-label="Caminho">
+          <a href="#shop">Inicio</a>
+          <strong>Perguntas frequentes</strong>
+        </div>
+        <section class="institutional-hero compact">
+          <p class="eyebrow">faq</p>
+          <h1>Duvidas comuns antes de escolher sua vela.</h1>
+        </section>
+        <div class="faq-list">
+          <details open>
+            <summary>As velas sao artesanais?</summary>
+            <p>Sim. A proposta da Calorine e trabalhar com lotes pequenos, acabamento manual e aromas selecionados.</p>
+          </details>
+          <details>
+            <summary>Como funciona o frete?</summary>
+            <p>No checkout, informe o CEP para simular prazo e valor. Pedidos acima do limite indicado podem ter entrega gratis.</p>
+          </details>
+          <details>
+            <summary>Posso favoritar produtos?</summary>
+            <p>Sim. Use o coracao nos cards ou na pagina do produto para montar sua lista de desejos.</p>
+          </details>
+          <details>
+            <summary>Como acompanho meu pedido?</summary>
+            <p>Depois de entrar na conta, acesse Minha conta para ver historico, status e itens comprados.</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="screen admin-screen" id="adminScreen" data-screen="admin">
+        <div class="admin-topbar">
           <div>
-            <p class="eyebrow">gestao</p>
-            <h2>Cadastro de velas</h2>
+            <p class="eyebrow">backoffice</p>
+            <h2>Administracao Calorine</h2>
           </div>
           <span class="session-pill" id="sessionPill">Visitante</span>
         </div>
 
         <div class="admin-locked" id="adminLocked">
           <p class="eyebrow">acesso restrito</p>
-          <h3>Somente administradores podem cadastrar velas.</h3>
-          <p class="muted">Entre com a conta administrativa para liberar esta area.</p>
+          <h3>Somente administradores podem acessar o painel.</h3>
+          <p class="muted">Entre com a conta administrativa para liberar operacao, pedidos e catalogo.</p>
           <a class="primary-action" href="#login">Ir para login</a>
         </div>
 
-        <div class="admin-layout" id="adminLayout">
-          <form class="admin-form" id="productForm">
-            <input type="hidden" id="productId" />
-            <input type="hidden" id="productImageCurrent" />
-            <input type="hidden" id="productExtraImageOneCurrent" />
-            <input type="hidden" id="productExtraImageTwoCurrent" />
-            <label>
-              Nome da vela
-              <input id="productName" required maxlength="48" placeholder="Ex: Brisa de Lavanda" />
-            </label>
-            <label>
-              Aroma
-              <input id="productScent" required maxlength="48" placeholder="Lavanda, baunilha, capim-limao" />
-            </label>
-            <div class="field-row">
-              <label>
-                Preco
-                <input id="productPrice" required min="1" step="0.01" type="number" placeholder="49.90" />
-              </label>
-              <label>
-                Estoque
-                <input id="productStock" required min="0" step="1" type="number" placeholder="12" />
-              </label>
+        <div class="admin-shell" id="adminLayout">
+          <aside class="admin-sidebar" aria-label="Menu administrativo">
+            <div class="admin-sidebar-head">
+              <p class="eyebrow">operacao</p>
+              <strong>Calorine Admin</strong>
             </div>
-            <label>
-              Familia de cor
-              <select id="productColor">
-                <option value="rose">Rosa queimado</option>
-                <option value="sage">Verde salvia</option>
-                <option value="honey">Mel</option>
-                <option value="clay">Argila</option>
-                <option value="ocean">Azul suave</option>
-              </select>
-            </label>
-            <div class="field-row">
-              <label>
-                Tamanho
-                <select id="productSize">
-                  <option value="120g">120g</option>
-                  <option value="250g">250g</option>
-                </select>
-              </label>
-              <label>
-                Sensacao
-                <select id="productMood">
-                  <option value="aconchegante">Aconchegante</option>
-                  <option value="relaxante">Relaxante</option>
-                </select>
-              </label>
-            </div>
-            <label>
-              Ocasiao
-              <select id="productOccasion">
-                <option value="classica">Classica</option>
-                <option value="presente">Presente</option>
-              </select>
-            </label>
-            <label>
-              Descricao
-              <textarea id="productDescription" required maxlength="160" placeholder="Conte o clima, o tamanho e a proposta da vela"></textarea>
-            </label>
-            <label>
-              Imagem da vela
-              <input id="productImage" type="file" accept="image/*" />
-            </label>
-            <div class="image-preview" id="productImagePreview">Sem imagem selecionada</div>
-            <div class="field-row">
-              <label>
-                Miniatura extra 1
-                <input id="productExtraImageOne" type="file" accept="image/*" />
-              </label>
-              <label>
-                Miniatura extra 2
-                <input id="productExtraImageTwo" type="file" accept="image/*" />
-              </label>
-            </div>
-            <div class="field-row">
-              <div class="image-preview" id="productExtraImageOnePreview">Sem imagem extra</div>
-              <div class="image-preview" id="productExtraImageTwoPreview">Sem imagem extra</div>
-            </div>
-            <div class="form-actions">
-              <button class="primary-action" type="submit">Salvar vela</button>
-              <button class="ghost-action" id="clearForm" type="button">Limpar</button>
-            </div>
-            <p class="form-message" id="productMessage"></p>
-          </form>
+            <nav class="admin-nav">
+              <button class="is-active" type="button" data-admin-section="overview">Visao geral</button>
+              <button type="button" data-admin-section="orders">Pedidos</button>
+              <button type="button" data-admin-section="products">Velas</button>
+              <button type="button" data-admin-section="customers">Clientes</button>
+              <button type="button" data-admin-section="coupons">Cupons</button>
+              <button type="button" data-admin-section="settings">Configuracoes</button>
+            </nav>
+            <a class="admin-store-link" href="#shop">Ir para loja</a>
+          </aside>
 
-          <div class="admin-list" id="adminList"></div>
+          <section class="admin-workspace">
+            <header class="admin-workspace-head">
+              <div>
+                <p class="eyebrow" id="adminPanelEyebrow">painel</p>
+                <h3 id="adminPanelTitle">Visao geral</h3>
+              </div>
+              <span class="admin-state">Ambiente administrativo</span>
+            </header>
+
+            <section class="admin-view is-active" data-admin-view="overview">
+              <div class="admin-dashboard" aria-label="Resumo administrativo">
+                <article>
+                  <span>Pedidos</span>
+                  <strong id="adminTotalOrders">0</strong>
+                </article>
+                <article>
+                  <span>Vendas</span>
+                  <strong id="adminTotalSales">R$ 0,00</strong>
+                </article>
+                <article>
+                  <span>Velas ativas</span>
+                  <strong id="adminActiveProducts">0</strong>
+                </article>
+                <article>
+                  <span>Estoque baixo</span>
+                  <strong id="adminLowStock">0</strong>
+                </article>
+              </div>
+              <div class="admin-split">
+                <section class="admin-section">
+                  <div class="admin-section-heading">
+                    <div>
+                      <p class="eyebrow">pedidos</p>
+                      <h3>Ultimos pedidos</h3>
+                    </div>
+                    <button class="small-button" type="button" data-admin-section="orders">Ver todos</button>
+                  </div>
+                  <div class="admin-orders compact" id="adminRecentOrders"></div>
+                </section>
+                <section class="admin-section">
+                  <div class="admin-section-heading">
+                    <div>
+                      <p class="eyebrow">estoque</p>
+                      <h3>Atencao no catalogo</h3>
+                    </div>
+                    <button class="small-button" type="button" data-admin-section="products">Gerenciar</button>
+                  </div>
+                  <div class="admin-list compact" id="adminStockAlerts"></div>
+                </section>
+              </div>
+            </section>
+
+            <section class="admin-view" data-admin-view="orders">
+              <section class="admin-section admin-orders-section">
+                <div class="admin-section-heading">
+                  <div>
+                    <p class="eyebrow">pedidos</p>
+                    <h3>Pedidos recebidos</h3>
+                  </div>
+                </div>
+                <div class="admin-orders" id="adminOrders"></div>
+              </section>
+            </section>
+
+            <section class="admin-view" data-admin-view="products">
+              <div class="admin-products-grid">
+                <form class="admin-form" id="productForm">
+                  <input type="hidden" id="productId" />
+                  <input type="hidden" id="productImageCurrent" />
+                  <input type="hidden" id="productExtraImageOneCurrent" />
+                  <input type="hidden" id="productExtraImageTwoCurrent" />
+                  <label>
+                    Nome da vela
+                    <input id="productName" required maxlength="48" placeholder="Ex: Brisa de Lavanda" />
+                  </label>
+                  <label>
+                    Aroma
+                    <input id="productScent" required maxlength="48" placeholder="Lavanda, baunilha, capim-limao" />
+                  </label>
+                  <div class="field-row">
+                    <label>
+                      Preco
+                      <input id="productPrice" required min="1" step="0.01" type="number" placeholder="49.90" />
+                    </label>
+                    <label>
+                      Estoque
+                      <input id="productStock" required min="0" step="1" type="number" placeholder="12" />
+                    </label>
+                  </div>
+                  <label>
+                    Familia de cor
+                    <select id="productColor">
+                      <option value="rose">Rosa queimado</option>
+                      <option value="sage">Verde salvia</option>
+                      <option value="honey">Mel</option>
+                      <option value="clay">Argila</option>
+                      <option value="ocean">Azul suave</option>
+                    </select>
+                  </label>
+                  <div class="field-row">
+                    <label>
+                      Tamanho
+                      <select id="productSize">
+                        <option value="120g">120g</option>
+                        <option value="250g">250g</option>
+                      </select>
+                    </label>
+                    <label>
+                      Sensacao
+                      <select id="productMood">
+                        <option value="aconchegante">Aconchegante</option>
+                        <option value="relaxante">Relaxante</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    Ocasiao
+                    <select id="productOccasion">
+                      <option value="classica">Classica</option>
+                      <option value="presente">Presente</option>
+                    </select>
+                  </label>
+                  <label>
+                    Descricao
+                    <textarea id="productDescription" required maxlength="160" placeholder="Conte o clima, o tamanho e a proposta da vela"></textarea>
+                  </label>
+                  <label>
+                    Imagem da vela
+                    <input id="productImage" type="file" accept="image/*" />
+                  </label>
+                  <div class="image-preview" id="productImagePreview">Sem imagem selecionada</div>
+                  <div class="field-row">
+                    <label>
+                      Miniatura extra 1
+                      <input id="productExtraImageOne" type="file" accept="image/*" />
+                    </label>
+                    <label>
+                      Miniatura extra 2
+                      <input id="productExtraImageTwo" type="file" accept="image/*" />
+                    </label>
+                  </div>
+                  <div class="field-row">
+                    <div class="image-preview" id="productExtraImageOnePreview">Sem imagem extra</div>
+                    <div class="image-preview" id="productExtraImageTwoPreview">Sem imagem extra</div>
+                  </div>
+                  <div class="form-actions">
+                    <button class="primary-action" type="submit">Salvar vela</button>
+                    <button class="ghost-action" id="clearForm" type="button">Limpar</button>
+                  </div>
+                  <p class="form-message" id="productMessage"></p>
+                </form>
+
+                <section class="admin-section">
+                  <div class="admin-section-heading">
+                    <div>
+                      <p class="eyebrow">catalogo</p>
+                      <h3>Velas cadastradas</h3>
+                    </div>
+                  </div>
+                  <div class="admin-list" id="adminList"></div>
+                </section>
+              </div>
+            </section>
+
+            <section class="admin-view" data-admin-view="customers">
+              <section class="admin-section">
+                <div class="admin-section-heading">
+                  <div>
+                    <p class="eyebrow">clientes</p>
+                    <h3>Clientes com pedidos</h3>
+                  </div>
+                </div>
+                <div class="admin-list" id="adminCustomers"></div>
+              </section>
+            </section>
+
+            <section class="admin-view" data-admin-view="coupons">
+              <section class="admin-section">
+                <div class="admin-section-heading">
+                  <div>
+                    <p class="eyebrow">promocoes</p>
+                    <h3>Cupons ativos</h3>
+                  </div>
+                </div>
+                <div class="admin-list">
+                  <article class="admin-item">
+                    <div>
+                      <h3>CALORINE10</h3>
+                      <p>10% de desconto no subtotal do carrinho.</p>
+                    </div>
+                    <span class="status-pill is-active">Ativo</span>
+                  </article>
+                  <article class="admin-item">
+                    <div>
+                      <h3>FRETEGRATIS</h3>
+                      <p>Remove o valor da entrega no checkout.</p>
+                    </div>
+                    <span class="status-pill is-active">Ativo</span>
+                  </article>
+                </div>
+              </section>
+            </section>
+
+            <section class="admin-view" data-admin-view="settings">
+              <section class="admin-section">
+                <div class="admin-section-heading">
+                  <div>
+                    <p class="eyebrow">loja</p>
+                    <h3>Configuracoes operacionais</h3>
+                  </div>
+                </div>
+                <div class="admin-list">
+                  <article class="admin-item">
+                    <div>
+                      <h3>Checkout</h3>
+                      <p>Pagamento, frete e WhatsApp estao simulados para testes da loja.</p>
+                    </div>
+                    <span class="status-pill is-muted">Simulado</span>
+                  </article>
+                  <article class="admin-item">
+                    <div>
+                      <h3>E-mail de pedidos</h3>
+                      <p>A confirmacao fica registrada no pedido e pode evoluir para envio real.</p>
+                    </div>
+                    <span class="status-pill is-muted">Pendente</span>
+                  </article>
+                </div>
+              </section>
+            </section>
+          </section>
         </div>
       </section>
 
@@ -314,7 +595,6 @@
             </label>
             <button class="primary-action" type="submit">Entrar</button>
             <button class="ghost-action" id="logoutButton" type="button">Sair</button>
-            <p class="hint-text">Admin teste: admin@colorine.com / admin123</p>
             <p class="form-message" id="loginMessage"></p>
           </form>
         </div>
@@ -405,7 +685,7 @@
           <div class="auth-copy">
             <p class="eyebrow">minha conta</p>
             <h2 id="accountTitle">Conta</h2>
-            <p class="muted">Confira os dados da sessao atual e acesse as areas disponiveis para o seu perfil.</p>
+            <p class="muted" id="accountIntro">Confira os dados da sessao atual e acesse as areas disponiveis para o seu perfil.</p>
           </div>
           <div class="account-summary">
             <div>
@@ -507,6 +787,7 @@
             <span>Total</span>
             <strong id="cartTotal">R$ 0,00</strong>
           </div>
+          <div class="checkout-preview" id="checkoutPreview"></div>
 
           <section class="checkout-step">
             <span>1</span>
@@ -532,13 +813,23 @@
             <div>
               <h3>Pagamento</h3>
               <label>
+                Cupom
+                <div class="coupon-row">
+                  <input id="couponCode" maxlength="24" placeholder="Ex: CALORINE10" />
+                  <button class="ghost-action" id="applyCoupon" type="button">Aplicar</button>
+                </div>
+              </label>
+              <p class="hint-text" id="couponMessage">Use CALORINE10 ou FRETEGRATIS para simular descontos.</p>
+              <label>
                 Forma de pagamento
                 <select id="paymentMethod">
                   <option value="pix">Pix</option>
                   <option value="card">Cartao de credito</option>
+                  <option value="whatsapp">WhatsApp</option>
                   <option value="boleto">Boleto</option>
                 </select>
               </label>
+              <div class="payment-simulation" id="paymentSimulation"></div>
             </div>
           </section>
 
@@ -547,6 +838,7 @@
             <div>
               <h3>Confirmacao</h3>
               <button class="primary-action" type="submit">Finalizar pedido</button>
+              <button class="secondary-action" id="whatsappCheckout" type="button">Finalizar pelo WhatsApp</button>
             </div>
           </section>
           <p class="checkout-message" id="checkoutMessage"></p>
@@ -573,7 +865,7 @@
     </aside>
 
     <footer class="site-footer">
-      <span>Colorine Velas</span>
+      <span>Calorine Velas</span>
       <strong>Desenvolvido por Reynaldo Miquelino Neto</strong>
     </footer>
 

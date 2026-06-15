@@ -1,12 +1,13 @@
-﻿const storageKeys = {
-  cart: "colorine-cart",
-  user: "colorine-user",
-  users: "colorine-users",
-  favorites: "colorine-favorites",
-  shipping: "colorine-shipping",
+const storageKeys = {
+  cart: "calorine-cart",
+  user: "calorine-user",
+  favorites: "calorine-favorites",
+  shipping: "calorine-shipping",
+  coupon: "calorine-coupon",
+  reviews: "calorine-reviews",
 };
 
-const apiBase = location.protocol === "file:" ? "http://localhost:8080" : "";
+const apiBase = location.protocol === "file:" || location.port !== "8080" ? "http://localhost:8080" : "";
 
 const seedProducts = [
   {
@@ -59,24 +60,13 @@ const seedProducts = [
   },
 ];
 
-const seedAdmin = {
-  id: "admin-colorine",
-  name: "Administradora Colorine",
-  phone: "",
-  email: "admin@colorine.com",
-  password: "admin123",
-  address: "",
-  role: "ADMIN",
-  acceptsMarketing: false,
-  createdAt: "2026-05-25T00:00:00.000Z",
-};
-
 let products = seedProducts;
 let cart = readStorage(storageKeys.cart, []);
 let user = readStorage(storageKeys.user, null);
-let users = readStorage(storageKeys.users, []);
 let favoriteIds = readStorage(storageKeys.favorites, []);
 let shippingQuote = readStorage(storageKeys.shipping, { cep: "", cost: null, days: null });
+let coupon = readStorage(storageKeys.coupon, { code: "", discount: 0, freeShipping: false });
+let reviews = readStorage(storageKeys.reviews, {});
 let currentProductId = null;
 
 const productGrid = document.querySelector("#productGrid");
@@ -93,10 +83,15 @@ const favoriteCount = document.querySelector("#favoriteCount");
 const cartTotal = document.querySelector("#cartTotal");
 const cartSubtotal = document.querySelector("#cartSubtotal");
 const checkoutItems = document.querySelector("#checkoutItems");
+const checkoutPreview = document.querySelector("#checkoutPreview");
 const cartDelivery = document.querySelector("#cartDelivery");
 const checkoutMessage = document.querySelector("#checkoutMessage");
 const accountOrders = document.querySelector("#accountOrders");
 const adminList = document.querySelector("#adminList");
+const adminOrders = document.querySelector("#adminOrders");
+const adminRecentOrders = document.querySelector("#adminRecentOrders");
+const adminStockAlerts = document.querySelector("#adminStockAlerts");
+const adminCustomers = document.querySelector("#adminCustomers");
 const sessionPill = document.querySelector("#sessionPill");
 const productForm = document.querySelector("#productForm");
 const productImageInput = document.querySelector("#productImage");
@@ -113,8 +108,13 @@ const adminLocked = document.querySelector("#adminLocked");
 const menuLogoutButton = document.querySelector("#menuLogoutButton");
 const cartCepInput = document.querySelector("#cartCep");
 const shippingMessage = document.querySelector("#shippingMessage");
+const couponMessage = document.querySelector("#couponMessage");
+const couponCodeInput = document.querySelector("#couponCode");
+const paymentMethodInput = document.querySelector("#paymentMethod");
+const paymentSimulation = document.querySelector("#paymentSimulation");
 let selectedDetailView = "photo";
 let accountOrderHistory = [];
+let adminOrderHistory = [];
 
 function readStorage(key, fallback) {
   const value = localStorage.getItem(key);
@@ -125,10 +125,6 @@ function writeStorage(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-function encodeBasicAuth(email, password) {
-  return `Basic ${btoa(`${email}:${password}`)}`;
-}
-
 async function apiRequest(path, options = {}) {
   const headers = {
     ...(options.body ? { "Content-Type": "application/json" } : {}),
@@ -136,10 +132,15 @@ async function apiRequest(path, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${apiBase}${path}`, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(`${apiBase}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    throw new Error("Nao consegui conectar ao servidor. Verifique se o Spring esta rodando em http://localhost:8080.");
+  }
 
   if (!response.ok) {
     let message = "Nao foi possivel concluir a operacao.";
@@ -160,21 +161,13 @@ async function apiRequest(path, options = {}) {
 
 async function loadProducts({ silent = false } = {}) {
   try {
-    products = await apiRequest("/api/candles");
+    products = await apiRequest(isAdmin() ? "/api/candles/admin" : "/api/candles", { authenticated: isAdmin() });
     cart = cart.filter((item) => products.some((product) => normalizeProductId(product.id) === normalizeProductId(item.productId)));
     writeStorage(storageKeys.cart, cart);
   } catch (error) {
     if (!silent) {
       productGrid.innerHTML = `<p class="empty-state">Nao consegui conectar com o banco agora. Exibindo vitrine local.</p>`;
     }
-  }
-}
-
-function ensureAdminUser() {
-  const hasAdmin = users.some((candidate) => candidate.email === seedAdmin.email);
-  if (!hasAdmin) {
-    users.push(seedAdmin);
-    writeStorage(storageKeys.users, users);
   }
 }
 
@@ -232,6 +225,7 @@ function paymentToApi(value) {
   return {
     pix: "PIX",
     card: "CREDIT_CARD",
+    whatsapp: "PIX",
     boleto: "BOLETO",
   }[value] || "PIX";
 }
@@ -246,7 +240,10 @@ function paymentLabel(value) {
 
 function statusLabel(value) {
   return {
-    CREATED: "Criado",
+    CREATED: "Recebido",
+    PREPARING: "Preparando",
+    SHIPPED: "Enviado",
+    DELIVERED: "Entregue",
     PAID: "Pago",
     CANCELED: "Cancelado",
   }[value] || value;
@@ -288,6 +285,8 @@ function getProductFacets(product) {
     size: normalizeText(size),
     occasion: normalizeText(occasion),
     mood: normalizeText(mood),
+    price: Number(product.price),
+    stock: Number(product.stock),
   };
 }
 
@@ -299,6 +298,21 @@ function productMatchesFilters(product, selectedFilters) {
   const facets = getProductFacets(product);
   return Object.entries(selectedFilters).every(([group, values]) => {
     if (!values.length) return true;
+    if (group === "price") {
+      return values.some((value) => {
+        if (value === "ate-55") return facets.price <= 55;
+        if (value === "55-65") return facets.price > 55 && facets.price <= 65;
+        if (value === "acima-65") return facets.price > 65;
+        return true;
+      });
+    }
+    if (group === "stock") {
+      return values.some((value) => {
+        if (value === "available") return facets.stock > 0;
+        if (value === "low") return facets.stock > 0 && facets.stock <= 5;
+        return true;
+      });
+    }
     const facet = facets[group] || "";
     return values.some((value) => facet.includes(normalizeText(value)));
   });
@@ -326,7 +340,8 @@ function normalizeProductId(value) {
 }
 
 function findProduct(productIdValue) {
-  return products.find((product) => normalizeProductId(product.id) === normalizeProductId(productIdValue));
+  const normalizedValue = normalizeProductId(productIdValue);
+  return products.find((product) => normalizeProductId(product.id) === normalizedValue || `product-${normalizeProductId(product.id)}` === normalizedValue);
 }
 
 function isFavoriteProduct(productIdValue) {
@@ -359,11 +374,18 @@ function setRoute(route) {
   document.querySelectorAll(".screen").forEach((screen) => {
     screen.classList.toggle("active", screen.dataset.screen === targetRoute);
   });
-  document.querySelectorAll(".nav-link").forEach((link) => {
+  document.querySelectorAll("[data-route]").forEach((link) => {
     link.classList.toggle("active", link.dataset.route === targetRoute);
   });
   updateAdminAccess();
   if (targetRoute === "account") loadAccountOrders();
+  if (targetRoute === "admin") {
+    loadProducts({ silent: true }).then(() => {
+      renderProducts();
+      renderAdminList();
+    });
+    loadAdminOrders();
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -407,12 +429,48 @@ function renderProductDetail() {
   addButton.disabled = product.stock <= 0;
   renderDetailThumbs(product);
   renderRelatedProducts(product);
+  renderReviews(product.id);
+}
+
+function renderReviews(productId) {
+  const normalizedId = normalizeProductId(productId);
+  const productReviews = reviews[normalizedId] || [];
+  const summary = document.querySelector("#reviewSummary");
+  const list = document.querySelector("#reviewList");
+
+  if (!productReviews.length) {
+    summary.textContent = "Sem avaliacoes ainda";
+    list.innerHTML = '<p class="hint-text">Seja a primeira pessoa a avaliar esta vela.</p>';
+    return;
+  }
+
+  const average = productReviews.reduce((sum, review) => sum + Number(review.rating), 0) / productReviews.length;
+  summary.textContent = `${average.toFixed(1)} de 5 (${productReviews.length})`;
+  list.innerHTML = productReviews.slice(-3).reverse().map((review) => `
+    <article>
+      <strong>${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</strong>
+      <p>${review.comment || "Sem comentario."}</p>
+    </article>
+  `).join("");
+}
+
+function saveReview() {
+  if (!currentProductId) return;
+  const normalizedId = normalizeProductId(currentProductId);
+  const rating = Number(document.querySelector("#reviewRating").value);
+  const comment = document.querySelector("#reviewComment").value.trim();
+
+  if (!reviews[normalizedId]) reviews[normalizedId] = [];
+  reviews[normalizedId].push({ rating, comment, createdAt: new Date().toISOString() });
+  writeStorage(storageKeys.reviews, reviews);
+  document.querySelector("#reviewComment").value = "";
+  renderReviews(normalizedId);
 }
 
 function getRelatedProducts(currentProduct) {
   const currentFacets = getProductFacets(currentProduct);
   return products
-    .filter((product) => normalizeProductId(product.id) !== normalizeProductId(currentProduct.id))
+    .filter((product) => product.active !== false && normalizeProductId(product.id) !== normalizeProductId(currentProduct.id))
     .map((product, index) => {
       const facets = getProductFacets(product);
       let score = 0;
@@ -448,6 +506,7 @@ function renderRelatedProducts(currentProduct) {
     card.querySelector(".tag").textContent = product.scent;
     card.querySelector("h3").textContent = product.name;
     card.querySelector("p").textContent = product.description;
+    card.querySelector("p").insertAdjacentHTML("afterend", renderProductMeta(product));
     card.querySelector("strong").textContent = formatCurrency(product.price);
 
     const favoriteButton = card.querySelector(".product-favorite");
@@ -519,6 +578,7 @@ function renderProducts() {
   const query = normalizeText(searchInput.value.trim());
   const selectedFilters = getSelectedFilters();
   const filteredProducts = sortProductList(products.filter((product) => {
+    if (product.active === false) return false;
     const searchable = normalizeText(`${product.name} ${product.scent} ${product.description}`);
     return searchable.includes(query) && productMatchesFilters(product, selectedFilters);
   }));
@@ -543,6 +603,7 @@ function renderProducts() {
     card.querySelector(".tag").textContent = product.scent;
     card.querySelector("h3").textContent = product.name;
     card.querySelector("p").textContent = product.description;
+    card.querySelector("p").insertAdjacentHTML("afterend", renderProductMeta(product));
     card.querySelector("strong").textContent = formatCurrency(product.price);
 
     const favoriteButton = card.querySelector(".product-favorite");
@@ -566,7 +627,30 @@ function renderProducts() {
   });
 }
 
+function renderProductMeta(product) {
+  return `
+    <div class="product-meta">
+      <span>${getProductSize(product)}</span>
+      <span>${optionLabel(product.mood)}</span>
+      <span>${product.stock > 0 ? `${product.stock} disp.` : "Esgotada"}</span>
+    </div>
+  `;
+}
+
+function validateProductPayload(product) {
+  if (product.name.length < 3) throw new Error("Informe um nome com pelo menos 3 caracteres.");
+  if (product.scent.length < 3) throw new Error("Informe um aroma com pelo menos 3 caracteres.");
+  if (product.description.length < 20) throw new Error("A descricao precisa ter pelo menos 20 caracteres.");
+  if (!Number.isFinite(product.price) || product.price < 1) throw new Error("Informe um preco valido.");
+  if (!Number.isInteger(product.stock) || product.stock < 0) throw new Error("Informe um estoque valido.");
+  if (!["rose", "sage", "honey", "clay", "ocean"].includes(product.color)) throw new Error("Escolha uma familia de cor valida.");
+  if (!["120g", "250g"].includes(product.size)) throw new Error("Escolha um tamanho valido.");
+  if (!["classica", "presente"].includes(product.occasion)) throw new Error("Escolha uma ocasiao valida.");
+  if (!["aconchegante", "relaxante"].includes(product.mood)) throw new Error("Escolha uma sensacao valida.");
+}
+
 function renderAdminList() {
+  renderAdminDashboard();
   adminList.innerHTML = "";
 
   if (!products.length) {
@@ -581,19 +665,158 @@ function renderAdminList() {
       <div>
         <h3>${product.name}</h3>
         <p>${product.scent} - ${getProductSize(product)} - ${optionLabel(product.mood)} - ${formatCurrency(product.price)} - ${product.stock} em estoque</p>
+        <span class="status-pill ${product.active ? "is-active" : "is-muted"}">${product.active ? "Ativa na loja" : "Oculta da loja"}</span>
       </div>
       <div class="admin-actions">
         <button class="small-button" type="button" aria-label="Editar ${product.name}">Editar</button>
-        <button class="small-button" type="button" aria-label="Remover ${product.name}">Excluir</button>
+        <button class="small-button" type="button" aria-label="${product.active ? "Desativar" : "Ativar"} ${product.name}">${product.active ? "Desativar" : "Ativar"}</button>
       </div>
     `;
 
-    const [editButton, deleteButton] = item.querySelectorAll("button");
+    const [editButton, toggleButton] = item.querySelectorAll("button");
     editButton.addEventListener("click", () => editProduct(product.id));
-    deleteButton.addEventListener("click", () => deleteProduct(product.id));
+    toggleButton.addEventListener("click", () => toggleProductActive(product.id, !product.active));
 
     adminList.append(item);
   });
+
+  renderAdminStockAlerts();
+}
+
+function renderAdminDashboard() {
+  const totalOrders = adminOrderHistory.length;
+  const totalSales = adminOrderHistory
+    .filter((order) => order.status !== "CANCELED")
+    .reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const activeProducts = products.filter((product) => product.active).length;
+  const lowStock = products.filter((product) => product.active && Number(product.stock) <= 5).length;
+
+  document.querySelector("#adminTotalOrders").textContent = totalOrders;
+  document.querySelector("#adminTotalSales").textContent = formatCurrency(totalSales);
+  document.querySelector("#adminActiveProducts").textContent = activeProducts;
+  document.querySelector("#adminLowStock").textContent = lowStock;
+}
+
+function renderAdminStockAlerts() {
+  if (!adminStockAlerts) return;
+
+  const lowStockProducts = products
+    .filter((product) => product.active !== false && Number(product.stock) <= 5)
+    .slice(0, 4);
+
+  if (!lowStockProducts.length) {
+    adminStockAlerts.innerHTML = '<p class="empty-state">Nenhum produto com estoque baixo.</p>';
+    return;
+  }
+
+  adminStockAlerts.innerHTML = lowStockProducts.map((product) => `
+    <article class="admin-item">
+      <div>
+        <h3>${product.name}</h3>
+        <p>${product.stock} unidades em estoque - ${getProductSize(product)}</p>
+      </div>
+      <span class="status-pill is-muted">Repor</span>
+    </article>
+  `).join("");
+}
+
+function renderAdminOrders() {
+  renderAdminDashboard();
+  adminOrders.innerHTML = "";
+
+  if (!isAdmin()) {
+    adminOrders.innerHTML = '<p class="empty-state">Entre como administradora para ver os pedidos.</p>';
+    renderAdminRecentOrders();
+    renderAdminCustomers();
+    return;
+  }
+
+  if (!adminOrderHistory.length) {
+    adminOrders.innerHTML = '<p class="empty-state">Nenhum pedido recebido ainda.</p>';
+    renderAdminRecentOrders();
+    renderAdminCustomers();
+    return;
+  }
+
+  adminOrderHistory.forEach((order) => {
+    const item = document.createElement("article");
+    item.className = "admin-order-card";
+    item.innerHTML = `
+      <div>
+        <h3>Pedido #${order.id} - ${order.customerName}</h3>
+        <p>${formatDate(order.createdAt)} - ${paymentLabel(order.paymentMethod)} - ${formatCurrency(order.total)}</p>
+        <p>${order.deliveryAddress || "Endereco nao informado"}</p>
+        ${(order.items || []).length ? `<ul class="order-items">${order.items.map((orderItem) => `<li>${orderItem.quantity}x ${orderItem.productName}</li>`).join("")}</ul>` : ""}
+      </div>
+      <label>
+        Status
+        <select data-order-status="${order.id}">
+          ${["CREATED", "PREPARING", "SHIPPED", "DELIVERED", "CANCELED"].map((status) => `<option value="${status}" ${order.status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}
+        </select>
+      </label>
+    `;
+
+    item.querySelector("select").addEventListener("change", (event) => updateOrderStatus(order.id, event.target.value));
+    adminOrders.append(item);
+  });
+
+  renderAdminRecentOrders();
+  renderAdminCustomers();
+}
+
+function renderAdminRecentOrders() {
+  if (!adminRecentOrders) return;
+
+  if (!adminOrderHistory.length) {
+    adminRecentOrders.innerHTML = '<p class="empty-state">Nenhum pedido recebido ainda.</p>';
+    return;
+  }
+
+  adminRecentOrders.innerHTML = adminOrderHistory.slice(0, 4).map((order) => `
+    <article class="admin-order-card">
+      <div>
+        <h3>Pedido #${order.id} - ${order.customerName}</h3>
+        <p>${statusLabel(order.status)} - ${formatCurrency(order.total)}</p>
+      </div>
+    </article>
+  `).join("");
+}
+
+function renderAdminCustomers() {
+  if (!adminCustomers) return;
+
+  const customers = new Map();
+  adminOrderHistory.forEach((order) => {
+    const key = order.customerEmail || order.customerName || `cliente-${order.customerId || order.id}`;
+    const current = customers.get(key) || {
+      name: order.customerName || "Cliente",
+      email: order.customerEmail || "E-mail nao informado",
+      orders: 0,
+      total: 0,
+      lastOrder: order.createdAt,
+    };
+    current.orders += 1;
+    current.total += order.status === "CANCELED" ? 0 : Number(order.total || 0);
+    current.lastOrder = order.createdAt || current.lastOrder;
+    customers.set(key, current);
+  });
+
+  const customerList = Array.from(customers.values()).sort((a, b) => b.total - a.total);
+
+  if (!customerList.length) {
+    adminCustomers.innerHTML = '<p class="empty-state">Nenhum cliente com pedido registrado ainda.</p>';
+    return;
+  }
+
+  adminCustomers.innerHTML = customerList.map((customer) => `
+    <article class="admin-item">
+      <div>
+        <h3>${customer.name}</h3>
+        <p>${customer.email} - ${customer.orders} pedido(s) - ultimo em ${formatDate(customer.lastOrder)}</p>
+      </div>
+      <strong>${formatCurrency(customer.total)}</strong>
+    </article>
+  `).join("");
 }
 
 function renderUser() {
@@ -609,11 +832,18 @@ function renderUser() {
     element.classList.toggle("hidden", !user);
   });
   renderAccount();
+  const deliveryAddress = document.querySelector("#deliveryAddress");
+  if (deliveryAddress && !deliveryAddress.value && user?.address) {
+    deliveryAddress.value = addressToText(user.address);
+  }
   updateAdminAccess();
 }
 
 function renderAccount() {
   document.querySelector("#accountTitle").textContent = user ? `Ola, ${user.name}` : "Conta";
+  document.querySelector("#accountIntro").textContent = isAdmin()
+    ? "Confira os dados da sessao atual. As ferramentas de gestao ficam no painel Admin."
+    : "Confira os dados da sessao atual e acompanhe seus pedidos.";
   document.querySelector("#accountName").textContent = user?.name || "-";
   document.querySelector("#accountEmail").textContent = user?.email || "-";
   document.querySelector("#accountPhone").textContent = user?.phone || "-";
@@ -635,17 +865,33 @@ function renderAccountOrders() {
 
   accountOrders.innerHTML = "";
   accountOrderHistory.forEach((order) => {
+    const orderItems = order.items || [];
     const item = document.createElement("article");
     item.className = "order-card";
     item.innerHTML = `
       <div>
         <h3>Pedido #${order.id}</h3>
         <p>${formatDate(order.createdAt)} - ${paymentLabel(order.paymentMethod)} - ${statusLabel(order.status)}</p>
+        <p>${order.deliveryAddress || "Endereco nao informado"}</p>
+        ${orderItems.length ? `<ul class="order-items">${orderItems.map((orderItem) => `<li>${orderItem.quantity}x ${orderItem.productName} - ${formatCurrency(orderItem.unitPrice)}</li>`).join("")}</ul>` : ""}
       </div>
       <strong>${formatCurrency(order.total)}</strong>
     `;
     accountOrders.append(item);
   });
+}
+
+function addressToText(address) {
+  if (!address) return "";
+  if (typeof address === "string") return address;
+  return [
+    address.street,
+    address.number,
+    address.neighborhood,
+    address.complement,
+    address.city && address.state ? `${address.city} - ${address.state}` : "",
+    address.cep,
+  ].filter(Boolean).join(", ");
 }
 
 async function loadAccountOrders() {
@@ -664,9 +910,28 @@ async function loadAccountOrders() {
   renderAccountOrders();
 }
 
+async function loadAdminOrders() {
+  if (!isAdmin()) {
+    adminOrderHistory = [];
+    renderAdminOrders();
+    return;
+  }
+
+  try {
+    adminOrderHistory = await apiRequest("/api/orders", { authenticated: true });
+  } catch {
+    adminOrderHistory = [];
+  }
+
+  renderAdminOrders();
+}
+
 function updateAdminAccess() {
   adminLayout.classList.toggle("locked", !isAdmin());
   adminLocked.classList.toggle("visible", !isAdmin());
+  if (isAdmin()) {
+    renderAdminOrders();
+  }
 }
 
 function setFormMessage(elementId, text, isError = false) {
@@ -781,11 +1046,6 @@ async function searchCepAddress() {
   }
 }
 
-function findRegisteredUser(email) {
-  const normalizedEmail = normalizeEmail(email);
-  return users.find((candidate) => candidate.email === normalizedEmail);
-}
-
 function isAdmin() {
   return user?.role === "ADMIN";
 }
@@ -797,9 +1057,14 @@ function getCartSubtotal() {
   }, 0);
 }
 
+function getCouponDiscount(subtotal = getCartSubtotal()) {
+  if (!coupon?.discount) return 0;
+  return Number((subtotal * coupon.discount).toFixed(2));
+}
+
 function getShippingCost(subtotal = getCartSubtotal()) {
   if (!cart.length || shippingQuote.cost === null) return 0;
-  return subtotal >= 180 ? 0 : shippingQuote.cost;
+  return subtotal >= 180 || coupon?.freeShipping ? 0 : shippingQuote.cost;
 }
 
 function renderShipping(subtotal = getCartSubtotal()) {
@@ -850,21 +1115,98 @@ function calculateShipping() {
   }
 }
 
+function applyCoupon() {
+  const code = normalizeText(couponCodeInput.value.trim()).toUpperCase();
+  const coupons = {
+    CALORINE10: { code: "CALORINE10", discount: 0.1, freeShipping: false },
+    FRETEGRATIS: { code: "FRETEGRATIS", discount: 0, freeShipping: true },
+  };
+
+  if (!code) {
+    coupon = { code: "", discount: 0, freeShipping: false };
+    localStorage.removeItem(storageKeys.coupon);
+    couponMessage.textContent = "Cupom removido.";
+    renderCart();
+    return;
+  }
+
+  if (!coupons[code]) {
+    coupon = { code: "", discount: 0, freeShipping: false };
+    localStorage.removeItem(storageKeys.coupon);
+    couponMessage.textContent = "Cupom nao encontrado.";
+    renderCart();
+    return;
+  }
+
+  coupon = coupons[code];
+  writeStorage(storageKeys.coupon, coupon);
+  couponMessage.textContent = coupon.freeShipping ? "Cupom aplicado: frete gratis." : "Cupom aplicado: 10% de desconto.";
+  renderCart();
+}
+
+function renderPaymentSimulation() {
+  const method = paymentMethodInput.value;
+  const total = getCartSubtotal() - getCouponDiscount() + getShippingCost();
+  const messages = {
+    pix: `Pix simulado: copie a chave CALORINE-${Math.max(1, Math.round(total * 100))}.`,
+    card: "Cartao simulado: o pedido sera aprovado automaticamente neste ambiente.",
+    whatsapp: "WhatsApp: vamos abrir uma mensagem pronta com os itens do pedido.",
+    boleto: "Boleto simulado: o vencimento fica para 2 dias uteis.",
+  };
+  paymentSimulation.textContent = messages[method] || "";
+}
+
+function buildWhatsAppMessage() {
+  const lines = cart.map((item) => {
+    const product = findProduct(item.productId);
+    return product ? `${item.quantity}x ${product.name} - ${formatCurrency(product.price * item.quantity)}` : "";
+  }).filter(Boolean);
+  const subtotal = getCartSubtotal();
+  const discount = getCouponDiscount(subtotal);
+  const shippingCost = getShippingCost(subtotal);
+  const total = subtotal - discount + shippingCost;
+
+  return [
+    "Ola, quero finalizar meu pedido na Calorine:",
+    ...lines,
+    `Subtotal: ${formatCurrency(subtotal)}`,
+    discount ? `Desconto: ${formatCurrency(discount)}` : "",
+    `Entrega: ${shippingCost === 0 ? "Gratis" : formatCurrency(shippingCost)}`,
+    `Total: ${formatCurrency(total)}`,
+    shippingQuote.cep ? `CEP: ${shippingQuote.cep}` : "",
+    document.querySelector("#deliveryAddress").value.trim() ? `Endereco: ${document.querySelector("#deliveryAddress").value.trim()}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+function openWhatsAppCheckout() {
+  if (!cart.length) {
+    checkoutMessage.textContent = "Adicione uma vela antes de finalizar pelo WhatsApp.";
+    return;
+  }
+  const url = `https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage())}`;
+  window.open(url, "_blank", "noopener");
+}
+
 function renderCart() {
   cartItems.innerHTML = "";
+  checkoutPreview.innerHTML = "";
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = getCartSubtotal();
+  const couponDiscount = getCouponDiscount(subtotal);
   const shippingCost = getShippingCost(subtotal);
-  const total = subtotal + shippingCost;
+  const total = Math.max(0, subtotal - couponDiscount + shippingCost);
 
   cartCount.textContent = totalItems;
   checkoutItems.textContent = totalItems;
   cartSubtotal.textContent = formatCurrency(subtotal);
   cartTotal.textContent = formatCurrency(total);
+  couponCodeInput.value = coupon?.code || "";
   renderShipping(subtotal);
+  renderPaymentSimulation();
 
   if (!cart.length) {
     cartItems.innerHTML = '<p class="empty-state">Seu carrinho esta vazio.</p>';
+    checkoutPreview.innerHTML = '<p class="hint-text">Adicione produtos para ver o resumo do pedido.</p>';
     return;
   }
 
@@ -877,8 +1219,7 @@ function renderCart() {
     row.innerHTML = `
       <div>
         <h3>${product.name}</h3>
-        <p>${formatCurrency(product.price)} cada</p>
-        <strong class="cart-line-total">${formatCurrency(product.price * item.quantity)}</strong>
+        <p>${item.quantity} un. x ${formatCurrency(product.price)}</p>
       </div>
       <div class="cart-item-actions">
         <div class="quantity">
@@ -886,6 +1227,7 @@ function renderCart() {
           <strong>${item.quantity}</strong>
           <button type="button" aria-label="Aumentar ${product.name}">+</button>
         </div>
+        <strong class="cart-line-total">${formatCurrency(product.price * item.quantity)}</strong>
         <button class="remove-item" type="button" aria-label="Remover ${product.name} do carrinho">Remover</button>
       </div>
     `;
@@ -897,6 +1239,18 @@ function renderCart() {
     removeButton.addEventListener("click", () => removeFromCart(product.id));
     cartItems.append(row);
   });
+  cartItems.scrollTop = 0;
+
+  checkoutPreview.innerHTML = `
+    <h3>Resumo do pedido</h3>
+    ${cart.map((item) => {
+      const product = findProduct(item.productId);
+      if (!product) return "";
+      return `<div><span>${item.quantity}x ${product.name}</span><strong>${formatCurrency(product.price * item.quantity)}</strong></div>`;
+    }).join("")}
+    ${couponDiscount ? `<div><span>Cupom ${coupon.code}</span><strong>- ${formatCurrency(couponDiscount)}</strong></div>` : ""}
+    <div><span>Entrega</span><strong>${shippingQuote.cost === null ? "A calcular" : (shippingCost === 0 ? "Gratis" : formatCurrency(shippingCost))}</strong></div>
+  `;
 }
 
 function renderFavorites() {
@@ -938,6 +1292,8 @@ function toggleFavorite(id) {
   }
 
   writeStorage(storageKeys.favorites, favoriteIds);
+  document.querySelector("#openFavorites").classList.add("is-bouncing");
+  window.setTimeout(() => document.querySelector("#openFavorites").classList.remove("is-bouncing"), 360);
   renderProducts();
   renderFavorites();
   if (currentProductId) renderProductDetail();
@@ -948,7 +1304,7 @@ function addToCart(id) {
   const product = findProduct(normalizedId);
   const cartItem = cart.find((item) => normalizeProductId(item.productId) === normalizedId);
 
-  if (!product || product.stock <= (cartItem?.quantity || 0)) return;
+  if (!product || product.active === false || product.stock <= (cartItem?.quantity || 0)) return;
 
   if (cartItem) {
     cartItem.quantity += 1;
@@ -958,6 +1314,8 @@ function addToCart(id) {
 
   writeStorage(storageKeys.cart, cart);
   renderCart();
+  document.querySelector("#openCart").classList.add("is-bouncing");
+  window.setTimeout(() => document.querySelector("#openCart").classList.remove("is-bouncing"), 360);
   openCart();
 }
 
@@ -1012,7 +1370,7 @@ function editProduct(productId) {
 }
 
 function deleteProduct(productId) {
-  deleteProductFromApi(productId);
+  toggleProductActive(productId, false);
 }
 
 function clearForm() {
@@ -1028,6 +1386,7 @@ function clearForm() {
 function openCart() {
   cartDrawer.classList.add("open");
   cartDrawer.setAttribute("aria-hidden", "false");
+  document.querySelector(".cart-panel").scrollTop = 0;
 }
 
 function closeCart() {
@@ -1045,9 +1404,33 @@ function closeFavorites() {
   favoritesDrawer.setAttribute("aria-hidden", "true");
 }
 
+function switchAdminSection(section) {
+  const titles = {
+    overview: ["painel", "Visao geral"],
+    orders: ["operacao", "Pedidos"],
+    products: ["catalogo", "Velas"],
+    customers: ["relacionamento", "Clientes"],
+    coupons: ["promocoes", "Cupons"],
+    settings: ["loja", "Configuracoes"],
+  };
+  const activeSection = titles[section] ? section : "overview";
+
+  document.querySelectorAll("[data-admin-view]").forEach((view) => {
+    view.classList.toggle("is-active", view.dataset.adminView === activeSection);
+  });
+  document.querySelectorAll(".admin-nav [data-admin-section]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.adminSection === activeSection);
+  });
+
+  const [eyebrow, title] = titles[activeSection];
+  document.querySelector("#adminPanelEyebrow").textContent = eyebrow;
+  document.querySelector("#adminPanelTitle").textContent = title;
+}
+
 function renderAll() {
   renderProducts();
   renderAdminList();
+  renderAdminOrders();
   renderUser();
   renderCart();
   renderFavorites();
@@ -1060,6 +1443,9 @@ document.querySelector("#openCart").addEventListener("click", openCart);
 document.querySelector("#closeCart").addEventListener("click", closeCart);
 document.querySelector("#openFavorites").addEventListener("click", openFavorites);
 document.querySelector("#closeFavorites").addEventListener("click", closeFavorites);
+document.querySelectorAll("[data-admin-section]").forEach((button) => {
+  button.addEventListener("click", () => switchAdminSection(button.dataset.adminSection));
+});
 document.querySelector("#detailFavorite").addEventListener("click", () => {
   if (currentProductId) toggleFavorite(currentProductId);
 });
@@ -1070,6 +1456,10 @@ cartCepInput.addEventListener("input", () => {
   cartCepInput.value = formatCep(cartCepInput.value);
 });
 document.querySelector("#calculateShipping").addEventListener("click", calculateShipping);
+document.querySelector("#applyCoupon").addEventListener("click", applyCoupon);
+document.querySelector("#whatsappCheckout").addEventListener("click", openWhatsAppCheckout);
+paymentMethodInput.addEventListener("change", renderPaymentSimulation);
+document.querySelector("#saveReview").addEventListener("click", saveReview);
 cartDrawer.addEventListener("click", (event) => {
   if (event.target === cartDrawer) closeCart();
 });
@@ -1091,6 +1481,14 @@ relatedProducts.addEventListener("click", (event) => {
 });
 document.querySelectorAll(".filter-panel input[type='checkbox']").forEach((input) => {
   input.addEventListener("change", renderProducts);
+});
+document.querySelector("#clearFilters").addEventListener("click", () => {
+  document.querySelectorAll(".filter-panel input[type='checkbox']").forEach((input) => {
+    input.checked = false;
+  });
+  searchInput.value = "";
+  sortProducts.value = "position";
+  renderProducts();
 });
 document.querySelector("#clearForm").addEventListener("click", clearForm);
 registerCepInput.addEventListener("input", () => {
@@ -1144,6 +1542,7 @@ productForm.addEventListener("submit", async (event) => {
       extraImageUrlOne: await getOptionalProductImage(productExtraImageOneInput, "#productExtraImageOneCurrent"),
       extraImageUrlTwo: await getOptionalProductImage(productExtraImageTwoInput, "#productExtraImageTwoCurrent"),
     };
+    validateProductPayload(formProduct);
     if (productId) {
       await apiRequest(`/api/candles/${productId}`, {
         method: "PUT",
@@ -1179,14 +1578,19 @@ loginForm.addEventListener("submit", async (event) => {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
+    if (!loggedUser.token) {
+      throw new Error("Login sem token de seguranca. Verifique a configuracao do backend.");
+    }
 
     user = {
       ...loggedUser,
       role: loggedUser.role || "CUSTOMER",
-      authHeader: encodeBasicAuth(email, password),
+      authHeader: `Bearer ${loggedUser.token}`,
     };
     writeStorage(storageKeys.user, user);
+    await loadProducts({ silent: true });
     await loadAccountOrders();
+    await loadAdminOrders();
     renderUser();
     setFormMessage("#loginMessage", "Login realizado com sucesso.");
     location.hash = "shop";
@@ -1206,6 +1610,7 @@ menuLogoutButton.addEventListener("click", () => {
 function logout() {
   user = null;
   accountOrderHistory = [];
+  adminOrderHistory = [];
   localStorage.removeItem(storageKeys.user);
   renderUser();
   setFormMessage("#loginMessage", "Voce saiu da conta.");
@@ -1237,15 +1642,20 @@ registerForm.addEventListener("submit", async (event) => {
       method: "POST",
       body: JSON.stringify(registerPayload),
     });
+    if (!registeredUser.token) {
+      throw new Error("Cadastro sem token de seguranca. Verifique a configuracao do backend.");
+    }
 
     user = {
       ...registeredUser,
       role: registeredUser.role || "CUSTOMER",
-      authHeader: encodeBasicAuth(email, password),
+      authHeader: `Bearer ${registeredUser.token}`,
     };
     writeStorage(storageKeys.user, user);
+    await loadProducts({ silent: true });
     registerForm.reset();
     await loadAccountOrders();
+    await loadAdminOrders();
     renderUser();
     setFormMessage("#registerMessage", "Conta criada e salva no banco com sucesso.");
     location.hash = "shop";
@@ -1280,6 +1690,7 @@ document.querySelector("#checkoutForm").addEventListener("submit", async (event)
   }
 
   const subtotal = getCartSubtotal();
+  const couponDiscount = getCouponDiscount(subtotal);
   const shippingCost = getShippingCost(subtotal);
   const payment = document.querySelector("#paymentMethod").value;
 
@@ -1291,6 +1702,12 @@ document.querySelector("#checkoutForm").addEventListener("submit", async (event)
         customerId: user.id,
         deliveryAddress: address,
         paymentMethod: paymentToApi(payment),
+        couponCode: coupon?.code || "",
+        discountTotal: couponDiscount,
+        shippingCep: shippingQuote.cep,
+        shippingCost,
+        shippingDays: shippingQuote.days,
+        paymentSimulation: payment,
         items: cart.map((item) => ({
           productId: Number(item.productId),
           quantity: item.quantity,
@@ -1301,6 +1718,10 @@ document.querySelector("#checkoutForm").addEventListener("submit", async (event)
     checkoutMessage.textContent = `Pedido #${order.id} confirmado. ${paymentLabel(order.paymentMethod)}, entrega ${shippingCost === 0 ? "gratis" : formatCurrency(shippingCost)} em ${shippingQuote.days} dias uteis.`;
     cart = [];
     writeStorage(storageKeys.cart, cart);
+    localStorage.removeItem(storageKeys.shipping);
+    localStorage.removeItem(storageKeys.coupon);
+    shippingQuote = { cep: "", cost: null, days: null };
+    coupon = { code: "", discount: 0, freeShipping: false };
     await loadProducts({ silent: true });
     await loadAccountOrders();
     renderAll();
@@ -1309,10 +1730,10 @@ document.querySelector("#checkoutForm").addEventListener("submit", async (event)
   }
 });
 
-ensureAdminUser();
 setRoute(location.hash.replace("#", "") || "shop");
 loadProducts({ silent: true }).finally(async () => {
   await loadAccountOrders();
+  await loadAdminOrders();
   renderAll();
 });
 
@@ -1329,6 +1750,34 @@ async function deleteProductFromApi(productId) {
     await loadProducts({ silent: true });
     renderAll();
     setFormMessage("#productMessage", "Vela removida do banco.");
+  } catch (error) {
+    setFormMessage("#productMessage", error.message, true);
+  }
+}
+
+async function toggleProductActive(productId, active) {
+  try {
+    await apiRequest(`/api/candles/${productId}/active/${active}`, {
+      method: "PUT",
+      authenticated: true,
+    });
+    setFormMessage("#productMessage", active ? "Vela ativada na loja." : "Vela desativada da loja.");
+    await loadProducts({ silent: true });
+    renderAll();
+  } catch (error) {
+    setFormMessage("#productMessage", error.message, true);
+  }
+}
+
+async function updateOrderStatus(orderId, status) {
+  try {
+    await apiRequest(`/api/orders/${orderId}/status`, {
+      method: "PUT",
+      authenticated: true,
+      body: JSON.stringify({ status }),
+    });
+    await loadAdminOrders();
+    await loadAccountOrders();
   } catch (error) {
     setFormMessage("#productMessage", error.message, true);
   }

@@ -2,6 +2,7 @@ package br.com.colorine.web;
 
 import java.util.Map;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -24,5 +25,11 @@ public class ApiExceptionHandler {
         .map(error -> error.getField() + ": " + error.getDefaultMessage())
         .orElse("Dados invalidos.");
     return Map.of("message", message);
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  public Map<String, String> handleAccessDenied(AccessDeniedException exception) {
+    return Map.of("message", exception.getMessage());
   }
 }

@@ -1,5 +1,6 @@
 package br.com.colorine.service;
 
+import br.com.colorine.config.JwtService;
 import br.com.colorine.domain.UserAccount;
 import br.com.colorine.domain.UserAddress;
 import br.com.colorine.domain.UserRole;
@@ -10,6 +11,9 @@ import br.com.colorine.web.dto.AuthResponse;
 import br.com.colorine.web.dto.LoginRequest;
 import br.com.colorine.web.dto.RegisterRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +22,19 @@ public class AuthService {
 
   private final UserAccountRepository users;
   private final PasswordEncoder passwordEncoder;
+  private final JwtService jwtService;
+  private final AuthenticationManager authenticationManager;
 
-  public AuthService(UserAccountRepository users, PasswordEncoder passwordEncoder) {
+  public AuthService(
+      UserAccountRepository users,
+      PasswordEncoder passwordEncoder,
+      JwtService jwtService,
+      AuthenticationManager authenticationManager
+  ) {
     this.users = users;
     this.passwordEncoder = passwordEncoder;
+    this.jwtService = jwtService;
+    this.authenticationManager = authenticationManager;
   }
 
   @Transactional
@@ -45,13 +58,15 @@ public class AuthService {
 
   @Transactional(readOnly = true)
   public AuthResponse login(LoginRequest request) {
-    UserAccount user = users.findByEmail(normalizeEmail(request.email()))
-        .orElseThrow(() -> new IllegalArgumentException("E-mail ou senha incorretos."));
-
-    if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+    String email = normalizeEmail(request.email());
+    try {
+      authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
+    } catch (AuthenticationException error) {
       throw new IllegalArgumentException("E-mail ou senha incorretos.");
     }
 
+    UserAccount user = users.findByEmail(email)
+        .orElseThrow(() -> new IllegalArgumentException("E-mail ou senha incorretos."));
     return toResponse(user);
   }
 
@@ -78,7 +93,8 @@ public class AuthService {
         user.getEmail(),
         user.getPhone(),
         toAddressResponse(user.getAddress()),
-        user.getRole()
+        user.getRole(),
+        jwtService.createToken(user.getEmail(), user.getRole())
     );
   }
 
