@@ -1,6 +1,7 @@
 target/
 .idea/
 *.log
+data/calorine.trace.db
 .git-backup-*/
 .git-corrupt-*/
 .git-stuck-*/
