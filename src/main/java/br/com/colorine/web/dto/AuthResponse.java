@@ -8,6 +8,7 @@ public record AuthResponse(
     String email,
     String phone,
     AddressResponse address,
+    boolean acceptsMarketing,
     UserRole role,
     String token
 ) {

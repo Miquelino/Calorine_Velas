@@ -26,11 +26,11 @@ public class DataInitializer {
       @Value("${app.admin.password:admin123}") String adminPassword
   ) {
     return args -> {
-      String normalizedAdminEmail = adminEmail.trim().toLowerCase();
-      if (!users.existsByEmail(normalizedAdminEmail)) {
+      String email = adminEmail.trim().toLowerCase();
+      if (!users.existsByEmail(email)) {
         UserAccount admin = new UserAccount();
         admin.setName("Administradora Calorine");
-        admin.setEmail(normalizedAdminEmail);
+        admin.setEmail(email);
         admin.setPhone("");
         admin.setRole(UserRole.ADMIN);
         admin.setPasswordHash(passwordEncoder.encode(adminPassword));
@@ -38,71 +38,22 @@ public class DataInitializer {
       }
 
       if (candles.count() == 0) {
-        candles.save(candle(
-            "Brisa de Lavanda",
-            "Lavanda e alecrim",
-            "Vela calmante em pote de vidro, ideal para banho relaxante ou leitura no fim do dia.",
-            "54.90",
-            18,
-            "sage",
-            "120g",
-            "classica",
-            "relaxante"
-        ));
-        candles.save(candle(
-            "Doce Baunilha",
-            "Baunilha e tonka",
-            "Aroma acolhedor e cremoso, feito para deixar a casa com cheiro de sobremesa elegante.",
-            "49.90",
-            24,
-            "honey",
-            "120g",
-            "classica",
-            "aconchegante"
-        ));
-        candles.save(candle(
-            "Figo Rosado",
-            "Figo, rosas e madeira",
-            "Uma vela marcante para presente, com perfume floral frutado e acabamento artesanal.",
-            "64.90",
-            10,
-            "rose",
-            "250g",
-            "presente",
-            "aconchegante"
-        ));
-        candles.save(candle(
-            "Mar de Linho",
-            "Algodao, sal e cedro",
-            "Fresca e limpa, perfeita para sala, lavabo e ambientes que pedem leveza.",
-            "59.90",
-            14,
-            "ocean",
-            "250g",
-            "classica",
-            "relaxante"
-        ));
+        candles.save(candle("Brisa de Lavanda", "Lavanda e alecrim", "Vela calmante em pote de vidro, ideal para banho relaxante ou leitura no fim do dia.", "54.90", 18, "sage", "120g", "classica", "relaxante"));
+        candles.save(candle("Doce Baunilha", "Baunilha e tonka", "Aroma acolhedor e cremoso, feito para deixar a casa com cheiro de sobremesa elegante.", "49.90", 24, "honey", "120g", "classica", "aconchegante"));
+        candles.save(candle("Figo Rosado", "Figo, rosas e madeira", "Uma vela marcante para presente, com perfume floral frutado e acabamento artesanal.", "64.90", 10, "rose", "250g", "presente", "aconchegante"));
+        candles.save(candle("Mar de Linho", "Algodao, sal e cedro", "Fresca e limpa, perfeita para sala, lavabo e ambientes que pedem leveza.", "59.90", 14, "ocean", "250g", "classica", "relaxante"));
       }
     };
   }
 
-  private CandleProduct candle(
-      String name,
-      String scent,
-      String description,
-      String price,
-      int stock,
-      String color,
-      String size,
-      String occasion,
-      String mood
-  ) {
+  private CandleProduct candle(String name, String scent, String description, String price, int stock, String color, String size, String occasion, String mood) {
     CandleProduct candle = new CandleProduct();
     candle.setName(name);
     candle.setScent(scent);
     candle.setDescription(description);
     candle.setPrice(new BigDecimal(price));
     candle.setStock(stock);
+    candle.setMinimumStock(5);
     candle.setColor(color);
     candle.setSize(size);
     candle.setOccasion(occasion);

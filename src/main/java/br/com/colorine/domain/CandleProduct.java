@@ -29,16 +29,19 @@ public class CandleProduct {
   @Column(nullable = false)
   private int stock;
 
+  @Column(nullable = false)
+  private int minimumStock = 5;
+
   @Column(nullable = false, length = 30)
   private String color;
 
-  @Column(nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT '120g'")
+  @Column(nullable = false, length = 20)
   private String size = "120g";
 
-  @Column(nullable = false, length = 30, columnDefinition = "VARCHAR(30) DEFAULT 'classica'")
+  @Column(nullable = false, length = 30)
   private String occasion = "classica";
 
-  @Column(nullable = false, length = 30, columnDefinition = "VARCHAR(30) DEFAULT 'aconchegante'")
+  @Column(nullable = false, length = 30)
   private String mood = "aconchegante";
 
   @Column(nullable = false)
@@ -53,115 +56,34 @@ public class CandleProduct {
   @Column(columnDefinition = "TEXT")
   private String extraImageUrlTwo;
 
-  public Long getId() {
-    return id;
-  }
-
-  public void setId(Long id) {
-    this.id = id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getScent() {
-    return scent;
-  }
-
-  public void setScent(String scent) {
-    this.scent = scent;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public BigDecimal getPrice() {
-    return price;
-  }
-
-  public void setPrice(BigDecimal price) {
-    this.price = price;
-  }
-
-  public int getStock() {
-    return stock;
-  }
-
-  public void setStock(int stock) {
-    this.stock = stock;
-  }
-
-  public String getColor() {
-    return color;
-  }
-
-  public void setColor(String color) {
-    this.color = color;
-  }
-
-  public String getSize() {
-    return size;
-  }
-
-  public void setSize(String size) {
-    this.size = size;
-  }
-
-  public String getOccasion() {
-    return occasion;
-  }
-
-  public void setOccasion(String occasion) {
-    this.occasion = occasion;
-  }
-
-  public String getMood() {
-    return mood;
-  }
-
-  public void setMood(String mood) {
-    this.mood = mood;
-  }
-
-  public String getImageUrl() {
-    return imageUrl;
-  }
-
-  public void setImageUrl(String imageUrl) {
-    this.imageUrl = imageUrl;
-  }
-
-  public String getExtraImageUrlOne() {
-    return extraImageUrlOne;
-  }
-
-  public void setExtraImageUrlOne(String extraImageUrlOne) {
-    this.extraImageUrlOne = extraImageUrlOne;
-  }
-
-  public String getExtraImageUrlTwo() {
-    return extraImageUrlTwo;
-  }
-
-  public void setExtraImageUrlTwo(String extraImageUrlTwo) {
-    this.extraImageUrlTwo = extraImageUrlTwo;
-  }
-
-  public boolean isActive() {
-    return active;
-  }
-
-  public void setActive(boolean active) {
-    this.active = active;
-  }
+  public Long getId() { return id; }
+  public void setId(Long id) { this.id = id; }
+  public String getName() { return name; }
+  public void setName(String name) { this.name = name; }
+  public String getScent() { return scent; }
+  public void setScent(String scent) { this.scent = scent; }
+  public String getDescription() { return description; }
+  public void setDescription(String description) { this.description = description; }
+  public BigDecimal getPrice() { return price; }
+  public void setPrice(BigDecimal price) { this.price = price; }
+  public int getStock() { return stock; }
+  public void setStock(int stock) { this.stock = stock; }
+  public int getMinimumStock() { return minimumStock; }
+  public void setMinimumStock(int minimumStock) { this.minimumStock = minimumStock; }
+  public String getColor() { return color; }
+  public void setColor(String color) { this.color = color; }
+  public String getSize() { return size; }
+  public void setSize(String size) { this.size = size; }
+  public String getOccasion() { return occasion; }
+  public void setOccasion(String occasion) { this.occasion = occasion; }
+  public String getMood() { return mood; }
+  public void setMood(String mood) { this.mood = mood; }
+  public boolean isActive() { return active; }
+  public void setActive(boolean active) { this.active = active; }
+  public String getImageUrl() { return imageUrl; }
+  public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+  public String getExtraImageUrlOne() { return extraImageUrlOne; }
+  public void setExtraImageUrlOne(String extraImageUrlOne) { this.extraImageUrlOne = extraImageUrlOne; }
+  public String getExtraImageUrlTwo() { return extraImageUrlTwo; }
+  public void setExtraImageUrlTwo(String extraImageUrlTwo) { this.extraImageUrlTwo = extraImageUrlTwo; }
 }

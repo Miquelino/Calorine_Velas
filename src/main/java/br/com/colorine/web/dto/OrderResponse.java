@@ -9,17 +9,23 @@ import java.util.List;
 public record OrderResponse(
     Long id,
     String customerName,
+    String customerEmail,
+    String customerPhone,
     String deliveryAddress,
     List<OrderItemResponse> items,
     BigDecimal total,
     String couponCode,
     BigDecimal discountTotal,
+    String shippingCep,
+    String shippingService,
     BigDecimal shippingCost,
     Integer shippingDays,
     String paymentSimulation,
     String emailNotification,
     PaymentMethod paymentMethod,
     OrderStatus status,
+    Instant reviewRequestedAt,
+    String reviewNotification,
     Instant createdAt
 ) {
 }

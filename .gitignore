@@ -1,3 +1,7 @@
 target/
 .idea/
-*.iml
+*.log
+.git-backup-*/
+.git-corrupt-*/
+.git-stuck-*/
+tmp/

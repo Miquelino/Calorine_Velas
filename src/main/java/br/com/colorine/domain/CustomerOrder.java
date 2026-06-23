@@ -54,6 +54,9 @@ public class CustomerOrder {
   @Column(length = 12)
   private String shippingCep;
 
+  @Column(length = 30)
+  private String shippingService;
+
   @Column(nullable = false, precision = 10, scale = 2)
   private BigDecimal shippingCost = BigDecimal.ZERO;
 
@@ -65,128 +68,50 @@ public class CustomerOrder {
   @Column(length = 220)
   private String emailNotification;
 
+  private Instant reviewRequestedAt;
+
+  @Column(length = 220)
+  private String reviewNotification;
+
   @Column(nullable = false)
   private Instant createdAt = Instant.now();
 
-  public Long getId() {
-    return id;
-  }
-
-  public void setId(Long id) {
-    this.id = id;
-  }
-
-  public UserAccount getCustomer() {
-    return customer;
-  }
-
-  public void setCustomer(UserAccount customer) {
-    this.customer = customer;
-  }
-
-  public List<OrderItem> getItems() {
-    return items;
-  }
-
-  public void setItems(List<OrderItem> items) {
-    this.items = items;
-  }
-
-  public String getDeliveryAddress() {
-    return deliveryAddress;
-  }
-
-  public void setDeliveryAddress(String deliveryAddress) {
-    this.deliveryAddress = deliveryAddress;
-  }
-
-  public PaymentMethod getPaymentMethod() {
-    return paymentMethod;
-  }
-
-  public void setPaymentMethod(PaymentMethod paymentMethod) {
-    this.paymentMethod = paymentMethod;
-  }
-
-  public OrderStatus getStatus() {
-    return status;
-  }
-
-  public void setStatus(OrderStatus status) {
-    this.status = status;
-  }
-
-  public BigDecimal getTotal() {
-    return total;
-  }
-
-  public void setTotal(BigDecimal total) {
-    this.total = total;
-  }
-
-  public String getCouponCode() {
-    return couponCode;
-  }
-
-  public void setCouponCode(String couponCode) {
-    this.couponCode = couponCode;
-  }
-
-  public BigDecimal getDiscountTotal() {
-    return discountTotal;
-  }
-
-  public void setDiscountTotal(BigDecimal discountTotal) {
-    this.discountTotal = discountTotal;
-  }
-
-  public String getShippingCep() {
-    return shippingCep;
-  }
-
-  public void setShippingCep(String shippingCep) {
-    this.shippingCep = shippingCep;
-  }
-
-  public BigDecimal getShippingCost() {
-    return shippingCost;
-  }
-
-  public void setShippingCost(BigDecimal shippingCost) {
-    this.shippingCost = shippingCost;
-  }
-
-  public Integer getShippingDays() {
-    return shippingDays;
-  }
-
-  public void setShippingDays(Integer shippingDays) {
-    this.shippingDays = shippingDays;
-  }
-
-  public String getPaymentSimulation() {
-    return paymentSimulation;
-  }
-
-  public void setPaymentSimulation(String paymentSimulation) {
-    this.paymentSimulation = paymentSimulation;
-  }
-
-  public String getEmailNotification() {
-    return emailNotification;
-  }
-
-  public void setEmailNotification(String emailNotification) {
-    this.emailNotification = emailNotification;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(Instant createdAt) {
-    this.createdAt = createdAt;
-  }
+  public Long getId() { return id; }
+  public void setId(Long id) { this.id = id; }
+  public UserAccount getCustomer() { return customer; }
+  public void setCustomer(UserAccount customer) { this.customer = customer; }
+  public List<OrderItem> getItems() { return items; }
+  public void setItems(List<OrderItem> items) { this.items = items; }
+  public String getDeliveryAddress() { return deliveryAddress; }
+  public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
+  public PaymentMethod getPaymentMethod() { return paymentMethod; }
+  public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
+  public OrderStatus getStatus() { return status; }
+  public void setStatus(OrderStatus status) { this.status = status; }
+  public BigDecimal getTotal() { return total; }
+  public void setTotal(BigDecimal total) { this.total = total; }
+  public String getCouponCode() { return couponCode; }
+  public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
+  public BigDecimal getDiscountTotal() { return discountTotal; }
+  public void setDiscountTotal(BigDecimal discountTotal) { this.discountTotal = discountTotal; }
+  public String getShippingCep() { return shippingCep; }
+  public void setShippingCep(String shippingCep) { this.shippingCep = shippingCep; }
+  public String getShippingService() { return shippingService; }
+  public void setShippingService(String shippingService) { this.shippingService = shippingService; }
+  public BigDecimal getShippingCost() { return shippingCost; }
+  public void setShippingCost(BigDecimal shippingCost) { this.shippingCost = shippingCost; }
+  public Integer getShippingDays() { return shippingDays; }
+  public void setShippingDays(Integer shippingDays) { this.shippingDays = shippingDays; }
+  public String getPaymentSimulation() { return paymentSimulation; }
+  public void setPaymentSimulation(String paymentSimulation) { this.paymentSimulation = paymentSimulation; }
+  public String getEmailNotification() { return emailNotification; }
+  public void setEmailNotification(String emailNotification) { this.emailNotification = emailNotification; }
+  public Instant getReviewRequestedAt() { return reviewRequestedAt; }
+  public void setReviewRequestedAt(Instant reviewRequestedAt) { this.reviewRequestedAt = reviewRequestedAt; }
+  public String getReviewNotification() { return reviewNotification; }
+  public void setReviewNotification(String reviewNotification) { this.reviewNotification = reviewNotification; }
+  public Instant getCreatedAt() { return createdAt; }
+  public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
   public void addItem(OrderItem item) {
     items.add(item);

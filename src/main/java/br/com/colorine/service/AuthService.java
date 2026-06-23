@@ -9,11 +9,13 @@ import br.com.colorine.web.dto.AddressRequest;
 import br.com.colorine.web.dto.AddressResponse;
 import br.com.colorine.web.dto.AuthResponse;
 import br.com.colorine.web.dto.LoginRequest;
+import br.com.colorine.web.dto.PasswordChangeRequest;
+import br.com.colorine.web.dto.ProfileUpdateRequest;
 import br.com.colorine.web.dto.RegisterRequest;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,12 +27,7 @@ public class AuthService {
   private final JwtService jwtService;
   private final AuthenticationManager authenticationManager;
 
-  public AuthService(
-      UserAccountRepository users,
-      PasswordEncoder passwordEncoder,
-      JwtService jwtService,
-      AuthenticationManager authenticationManager
-  ) {
+  public AuthService(UserAccountRepository users, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager) {
     this.users = users;
     this.passwordEncoder = passwordEncoder;
     this.jwtService = jwtService;
@@ -52,7 +49,6 @@ public class AuthService {
     user.setAddress(toAddress(request.address()));
     user.setAcceptsMarketing(request.acceptsMarketing());
     user.setRole(UserRole.CUSTOMER);
-
     return toResponse(users.save(user));
   }
 
@@ -64,10 +60,28 @@ public class AuthService {
     } catch (AuthenticationException error) {
       throw new IllegalArgumentException("E-mail ou senha incorretos.");
     }
+    return toResponse(users.findByEmail(email)
+        .orElseThrow(() -> new IllegalArgumentException("E-mail ou senha incorretos.")));
+  }
 
-    UserAccount user = users.findByEmail(email)
-        .orElseThrow(() -> new IllegalArgumentException("E-mail ou senha incorretos."));
-    return toResponse(user);
+  @Transactional
+  public AuthResponse updateProfile(UserAccount user, ProfileUpdateRequest request) {
+    user.setName(request.name().trim());
+    user.setPhone(request.phone().trim());
+    user.setAcceptsMarketing(request.acceptsMarketing());
+    UserAddress updated = user.getAddress() == null ? new UserAddress() : user.getAddress();
+    applyAddress(updated, request.address());
+    user.setAddress(updated);
+    return toResponse(users.save(user));
+  }
+
+  @Transactional
+  public void changePassword(UserAccount user, PasswordChangeRequest request) {
+    if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+      throw new IllegalArgumentException("Senha atual incorreta.");
+    }
+    user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+    users.save(user);
   }
 
   private String normalizeEmail(String email) {
@@ -76,14 +90,18 @@ public class AuthService {
 
   private UserAddress toAddress(AddressRequest request) {
     UserAddress address = new UserAddress();
-    address.setCep(request.cep().trim());
+    applyAddress(address, request);
+    return address;
+  }
+
+  private void applyAddress(UserAddress address, AddressRequest request) {
+    address.setCep(request.cep() == null || request.cep().isBlank() ? "-" : request.cep().trim());
     address.setStreet(request.street().trim());
     address.setNumber(request.number().trim());
     address.setNeighborhood(request.neighborhood().trim());
     address.setComplement(request.complement() == null ? "" : request.complement().trim());
     address.setCity(request.city().trim());
     address.setState(request.state().trim().toUpperCase());
-    return address;
   }
 
   private AuthResponse toResponse(UserAccount user) {
@@ -93,24 +111,13 @@ public class AuthService {
         user.getEmail(),
         user.getPhone(),
         toAddressResponse(user.getAddress()),
+        user.isAcceptsMarketing(),
         user.getRole(),
-        jwtService.createToken(user.getEmail(), user.getRole())
-    );
+        jwtService.createToken(user.getEmail(), user.getRole()));
   }
 
   private AddressResponse toAddressResponse(UserAddress address) {
-    if (address == null) {
-      return null;
-    }
-    return new AddressResponse(
-        address.getId(),
-        address.getCep(),
-        address.getStreet(),
-        address.getNumber(),
-        address.getNeighborhood(),
-        address.getComplement(),
-        address.getCity(),
-        address.getState()
-    );
+    if (address == null) return null;
+    return new AddressResponse(address.getId(), address.getCep(), address.getStreet(), address.getNumber(), address.getNeighborhood(), address.getComplement(), address.getCity(), address.getState());
   }
 }

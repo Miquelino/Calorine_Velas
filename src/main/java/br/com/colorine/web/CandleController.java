@@ -47,20 +47,20 @@ public class CandleController {
 
   @PutMapping("/{id}")
   @PreAuthorize("hasRole('ADMIN')")
-  public CandleResponse update(@PathVariable Long id, @Valid @RequestBody CandleRequest request) {
+  public CandleResponse update(@PathVariable("id") Long id, @Valid @RequestBody CandleRequest request) {
     return candleService.update(id, request);
   }
 
   @PutMapping("/{id}/active/{active}")
   @PreAuthorize("hasRole('ADMIN')")
-  public CandleResponse setActive(@PathVariable Long id, @PathVariable boolean active) {
+  public CandleResponse setActive(@PathVariable("id") Long id, @PathVariable("active") boolean active) {
     return candleService.setActive(id, active);
   }
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @PreAuthorize("hasRole('ADMIN')")
-  public void delete(@PathVariable Long id) {
+  public void delete(@PathVariable("id") Long id) {
     candleService.deactivate(id);
   }
 }

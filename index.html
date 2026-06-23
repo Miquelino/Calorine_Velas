@@ -1,903 +1,435 @@
 <!doctype html>
 <html lang="pt-BR">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Calorine Velas</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260622-6" />
   </head>
   <body>
-    <header class="topbar">
-      <nav class="nav-categories" aria-label="Categorias principais">
-        <a href="#shop" class="menu-link" data-route="shop" aria-label="Ver tudo">
-          <span class="hamburger" aria-hidden="true"></span>
-          Ver tudo
-        </a>
+    <header class="site-header">
+      <button class="icon-button" id="menuButton" type="button">☰</button>
+      <nav>
+        <a href="#shop">Ver tudo</a>
         <a href="#shop">Aromas</a>
         <a href="#shop">Presentes</a>
-        <a href="#about" data-route="about">Sobre</a>
-        <a href="#care" data-route="care">Cuidados</a>
-        <a href="#faq" data-route="faq">FAQ</a>
-        <a href="#admin" class="admin-only" data-route="admin">Velas</a>
+        <a href="#sobre">Sobre</a>
+        <a href="#cuidados">Cuidados</a>
+        <a href="#faq">FAQ</a>
+        <a href="#shop">Velas</a>
       </nav>
-
-      <a class="brand" href="#shop" aria-label="Calorine Velas">
-        <img class="brand-logo" src="logo-colorine-transparent.png" alt="Calorine Velas" />
+      <a class="brand" href="#shop" aria-label="Calorine - pagina inicial">
+        <img src="Logo-calorine.png" alt="Calorine" />
       </a>
-
-      <div class="header-tools">
-        <label class="search-box header-search">
-          <input id="searchInput" type="search" placeholder="O que voce esta buscando hoje?" />
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="m21 21-4.4-4.4" />
-            <circle cx="11" cy="11" r="7" />
-          </svg>
-        </label>
-        <a href="#login" class="header-icon guest-only" data-route="login" aria-label="Entrar">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg>
-        </a>
-        <a href="#account" class="header-icon logged-only" data-route="account" aria-label="Minha conta">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg>
-        </a>
-        <button class="header-icon logged-only" id="menuLogoutButton" type="button" aria-label="Sair">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>
-        </button>
-        <button class="header-icon favorite-button" id="openFavorites" type="button" aria-label="Abrir favoritos">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" /></svg>
-          <span id="favoriteCount">0</span>
-        </button>
-        <button class="cart-button header-icon" id="openCart" type="button" aria-label="Abrir carrinho">
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M6.2 6h15l-1.7 8.4a2 2 0 0 1-2 1.6H9.1a2 2 0 0 1-2-1.6L5.4 3H2" />
-            <circle cx="9" cy="20" r="1.4" />
-            <circle cx="18" cy="20" r="1.4" />
-          </svg>
-          <span id="cartCount">0</span>
-        </button>
+      <div class="header-actions">
+        <input id="searchInput" placeholder="O que voce esta buscando hoje" />
+        <div class="account-menu">
+          <a class="icon-link" href="#login" id="loginLink">Conta</a>
+          <div class="account-dropdown" id="accountDropdown" hidden>
+            <a href="#account" id="accountDataLink">Dados pessoais</a>
+            <a href="#orders" id="ordersLink">Meus pedidos</a>
+            <a href="#favorites" id="favoritesLink">Favoritos</a>
+            <button id="headerLogoutButton" type="button">Sair</button>
+          </div>
+        </div>
+        <button class="cart-trigger" id="openCart" type="button">Carrinho <span id="cartCount">0</span></button>
       </div>
     </header>
 
     <main>
-<section class="screen active shop-screen" id="shopScreen" data-screen="shop">
-        <div class="breadcrumb" aria-label="Caminho">
-          <a href="#shop">Inicio</a>
-          <span>Atelie</span>
-          <strong>Velas artesanais</strong>
-        </div>
-
-        <section class="atelier-note" aria-label="Calorine">
+      <section class="screen shop-screen active" id="shopScreen" data-screen="shop">
+        <div class="page-head compact">
           <div>
-            <p class="eyebrow">calorine atelie</p>
-            <h2>Feito para perfumar pequenos rituais.</h2>
+            <p class="eyebrow">velas artesanais</p>
+            <h1>Calorine</h1>
+            <p>Escolha suas velas, calcule a entrega e finalize com pagamento simulado ou WhatsApp.</p>
           </div>
-          <p>Velas em tons quentes, aromas afetivos e acabamento artesanal para casa, presente e pausa.</p>
-        </section>
-
-        <section class="about-colorine" aria-label="Sobre a Calorine">
-          <div>
-            <p class="eyebrow">sobre a calorine</p>
-            <h2>Aroma, cor e cuidado em pequenos lotes.</h2>
-          </div>
-          <p>A Calorine nasce do desejo de transformar momentos simples em rituais de aconchego. Cada vela combina fragrancias afetivas, cores suaves e acabamento manual para perfumar a casa com calma e presenca.</p>
-        </section>
-
-        <div class="shop-heading">
-          <h1>Velas artesanais</h1>
-          <label class="sort-box">
-            <span aria-hidden="true">Ordenar</span>
-            <select id="sortProducts" aria-label="Ordenar produtos">
-              <option value="position">Posicao</option>
-              <option value="price-asc">Menor preco</option>
-              <option value="price-desc">Maior preco</option>
-              <option value="newest">Novidades</option>
-            </select>
-          </label>
+          <select id="sortProducts">
+            <option value="position">Ordenar</option>
+            <option value="price-asc">Menor preco</option>
+            <option value="price-desc">Maior preco</option>
+            <option value="name">Nome</option>
+          </select>
         </div>
-
-        <div class="shop-layout">
-          <aside class="filter-panel" aria-label="Filtros de produtos">
+        <div class="catalog-layout">
+          <aside class="filter-panel">
             <h2>Filtros</h2>
-            <details open>
-              <summary>Aromas</summary>
-              <label><input type="checkbox" data-filter="scent" value="lavanda" /> Lavanda</label>
-              <label><input type="checkbox" data-filter="scent" value="baunilha" /> Baunilha</label>
-              <label><input type="checkbox" data-filter="scent" value="figo" /> Figo</label>
-            </details>
-            <details>
-              <summary>Tamanho</summary>
-              <label><input type="checkbox" data-filter="size" value="120g" /> 120g</label>
-              <label><input type="checkbox" data-filter="size" value="250g" /> 250g</label>
-            </details>
-            <details>
-              <summary>Ocasiao</summary>
-              <label><input type="checkbox" data-filter="occasion" value="classica" /> Classica</label>
-              <label><input type="checkbox" data-filter="occasion" value="presente" /> Presente</label>
-            </details>
-            <details>
-              <summary>Sensacao</summary>
-              <label><input type="checkbox" data-filter="mood" value="relaxante" /> Relaxante</label>
-              <label><input type="checkbox" data-filter="mood" value="aconchegante" /> Aconchegante</label>
-            </details>
-            <details>
-              <summary>Preco</summary>
-              <label><input type="checkbox" data-filter="price" value="ate-55" /> Ate R$ 55</label>
-              <label><input type="checkbox" data-filter="price" value="55-65" /> R$ 55 a R$ 65</label>
-              <label><input type="checkbox" data-filter="price" value="acima-65" /> Acima de R$ 65</label>
-            </details>
-            <details>
-              <summary>Disponibilidade</summary>
-              <label><input type="checkbox" data-filter="stock" value="available" /> Em estoque</label>
-              <label><input type="checkbox" data-filter="stock" value="low" /> Ultimas unidades</label>
-            </details>
-            <button class="clear-filters" id="clearFilters" type="button">Limpar filtros</button>
+            <label><input type="checkbox" data-filter="size" value="120g" /> 120g</label>
+            <label><input type="checkbox" data-filter="size" value="250g" /> 250g</label>
+            <label><input type="checkbox" data-filter="mood" value="aconchegante" /> Aconchegante</label>
+            <label><input type="checkbox" data-filter="mood" value="relaxante" /> Relaxante</label>
+            <label><input type="checkbox" data-filter="stock" value="available" /> Em estoque</label>
+            <button class="ghost-action" id="clearFilters" type="button">Limpar filtros</button>
           </aside>
-
-          <div class="product-grid" id="productGrid"></div>
+          <section class="product-grid" id="productGrid"></section>
         </div>
       </section>
 
-      <section class="screen product-detail-screen" id="productDetailScreen" data-screen="product">
-        <div class="breadcrumb" aria-label="Caminho">
-          <a href="#shop">Inicio</a>
-          <span>Velas artesanais</span>
-          <strong id="detailBreadcrumb">Produto</strong>
-        </div>
-
+      <section class="screen product-screen" id="productScreen" data-screen="product">
+        <div class="product-page-inner"><a class="text-action product-back" href="#shop">Voltar para a loja</a>
         <div class="product-detail">
-          <div class="detail-gallery">
-            <div class="detail-thumbs" id="detailThumbs" aria-label="Miniaturas do produto"></div>
-            <div class="detail-media" id="detailMedia">
-              <button class="product-favorite detail-favorite" id="detailFavorite" type="button" aria-label="Adicionar aos favoritos">
-                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" /></svg>
-              </button>
-              <img id="detailImage" alt="" />
-              <span class="product-flame"></span>
-              <span class="product-jar"></span>
-            </div>
-          </div>
-
-          <div class="detail-copy">
+          <div class="detail-gallery"><div class="detail-media" id="detailMedia"><img id="detailImage" alt="" /></div></div>
+          <div class="detail-info">
             <p class="eyebrow" id="detailScent">aroma</p>
-            <h1 id="detailName">Produto</h1>
+            <h1 id="detailName">Vela</h1>
+            <button class="rating-summary" id="detailRatingSummary" type="button">Sem avaliacoes</button>
             <p id="detailDescription"></p>
+            <div id="detailMeta" class="product-meta"></div>
+            <strong id="detailPrice"></strong>
+            <div class="detail-actions"><button class="primary-action" id="detailAddToCart" type="button">Adicionar ao carrinho</button><button class="secondary-action" id="detailFavorite" type="button">Favoritar</button></div>
+          </div>
+        </div></div>
+        <section class="related-section"><div class="related-head"><div><p class="eyebrow">descubra tambem</p><h2>Voce tambem pode gostar</h2></div><a class="text-action" href="#shop">Ver todas</a></div><div class="product-grid related" id="relatedProducts"></div></section>
+        <section class="reviews-section" id="reviewsSection"><div class="reviews-list"><p class="eyebrow">experiencias reais</p><h2>Avaliacoes de clientes</h2><div class="reviews-overview" id="reviewsOverview"></div><div id="productReviews"></div></div><div class="review-entry"><div class="review-locked" id="reviewLocked"><strong>Avaliacao de compra verificada</strong><p>Depois que um pedido com este produto for entregue, a opcao de avaliar aparecera aqui e em Meus pedidos.</p></div><form class="review-form" id="reviewForm" hidden><input id="reviewOrderId" type="hidden" /><p class="eyebrow">sua avaliacao</p><fieldset class="star-rating"><legend>Selecione de 1 a 5 estrelas</legend><input id="star5" name="reviewRating" type="radio" value="5" required /><label for="star5" title="5 estrelas">★</label><input id="star4" name="reviewRating" type="radio" value="4" /><label for="star4" title="4 estrelas">★</label><input id="star3" name="reviewRating" type="radio" value="3" /><label for="star3" title="3 estrelas">★</label><input id="star2" name="reviewRating" type="radio" value="2" /><label for="star2" title="2 estrelas">★</label><input id="star1" name="reviewRating" type="radio" value="1" /><label for="star1" title="1 estrela">★</label></fieldset><label>Conte como foi sua experiencia<textarea id="reviewComment" maxlength="280" required></textarea></label><button class="primary-action" type="submit">Publicar avaliacao</button><p class="form-message" id="reviewMessage"></p></form></div></section>
+      </section>
 
-            <div class="detail-facts">
-              <div>
-                <span>Aroma</span>
-                <strong id="detailAroma">-</strong>
-              </div>
-              <div>
-                <span>Tamanho</span>
-                <strong id="detailSize">-</strong>
-              </div>
-              <div>
-                <span>Estoque</span>
-                <strong id="detailStock">-</strong>
-              </div>
-              <div>
-                <span>Ocasião</span>
-                <strong id="detailOccasion">-</strong>
-              </div>
-              <div>
-                <span>Sensação</span>
-                <strong id="detailMood">-</strong>
-              </div>
-            </div>
-
-            <div class="detail-buy">
-              <strong id="detailPrice">R$ 0,00</strong>
-              <button class="primary-action" id="detailAddToCart" type="button">Adicionar ao carrinho</button>
-            </div>
-
-            <section class="review-panel" aria-label="Avaliacoes do produto">
-              <div>
-                <span>Avaliacoes</span>
-                <strong id="reviewSummary">Sem avaliacoes ainda</strong>
-              </div>
-              <label>
-                Sua nota
-                <select id="reviewRating">
-                  <option value="5">5 estrelas</option>
-                  <option value="4">4 estrelas</option>
-                  <option value="3">3 estrelas</option>
-                  <option value="2">2 estrelas</option>
-                  <option value="1">1 estrela</option>
-                </select>
-              </label>
-              <label>
-                Comentario
-                <textarea id="reviewComment" maxlength="160" placeholder="Conte o que achou do aroma"></textarea>
-              </label>
-              <button class="ghost-action" id="saveReview" type="button">Salvar avaliacao</button>
-              <div class="review-list" id="reviewList"></div>
-            </section>
+      <section class="screen review-screen" id="reviewScreen" data-screen="review">
+        <div class="review-page">
+          <a class="text-action" href="#orders">Voltar para meus pedidos</a>
+          <header class="review-page-head">
+            <p class="eyebrow">compra verificada</p>
+            <h1>Avalie sua experiencia</h1>
+            <p>Sua opiniao ajuda outras pessoas a escolherem a vela ideal.</p>
+          </header>
+          <div class="review-page-grid">
+            <aside class="review-product-summary">
+              <img id="reviewPageProductImage" alt="" />
+              <div><span>Produto avaliado</span><h2 id="reviewPageProductName">Vela Calorine</h2><p id="reviewPageOrderReference"></p></div>
+            </aside>
+            <form class="review-form review-page-form" id="reviewPageForm">
+              <input id="reviewPageOrderId" type="hidden" />
+              <p class="eyebrow">sua avaliacao</p>
+              <fieldset class="star-rating">
+                <legend>Qual nota voce da para este produto?</legend>
+                <input id="reviewPageStar5" name="reviewPageRating" type="radio" value="5" required /><label for="reviewPageStar5" title="5 estrelas">&#9733;</label>
+                <input id="reviewPageStar4" name="reviewPageRating" type="radio" value="4" /><label for="reviewPageStar4" title="4 estrelas">&#9733;</label>
+                <input id="reviewPageStar3" name="reviewPageRating" type="radio" value="3" /><label for="reviewPageStar3" title="3 estrelas">&#9733;</label>
+                <input id="reviewPageStar2" name="reviewPageRating" type="radio" value="2" /><label for="reviewPageStar2" title="2 estrelas">&#9733;</label>
+                <input id="reviewPageStar1" name="reviewPageRating" type="radio" value="1" /><label for="reviewPageStar1" title="1 estrela">&#9733;</label>
+              </fieldset>
+              <label>Conte como foi sua experiencia<textarea id="reviewPageComment" maxlength="280" placeholder="Aroma, qualidade, embalagem..." required></textarea></label>
+              <button class="primary-action" type="submit">Publicar avaliacao</button>
+              <p class="form-message" id="reviewPageMessage"></p>
+            </form>
           </div>
         </div>
-
-        <section class="related-products" aria-label="Produtos relacionados">
-          <div class="related-heading">
-            <p class="eyebrow">continue explorando</p>
-            <h2>Voce tambem pode gostar</h2>
-          </div>
-          <div class="related-grid" id="relatedProducts"></div>
-        </section>
       </section>
 
-      <section class="screen institutional-screen" id="aboutScreen" data-screen="about">
-        <div class="breadcrumb" aria-label="Caminho">
-          <a href="#shop">Inicio</a>
-          <strong>Sobre</strong>
-        </div>
-        <section class="institutional-hero">
-          <p class="eyebrow">sobre a calorine</p>
-          <h1>Velas feitas para transformar casa em ritual.</h1>
-          <p>A Calorine combina aromas afetivos, cores suaves e producao em pequenos lotes para criar velas com presenca, cuidado e acabamento artesanal.</p>
-        </section>
-        <div class="institutional-grid">
-          <article>
-            <span>01</span>
-            <h2>Pequenos lotes</h2>
-            <p>Cada leva e pensada para manter consistencia de perfume, acabamento e identidade visual.</p>
-          </article>
-          <article>
-            <span>02</span>
-            <h2>Aromas afetivos</h2>
-            <p>Lavanda, baunilha, figo e notas limpas aparecem em composicoes para descanso, presente e rotina.</p>
-          </article>
-          <article>
-            <span>03</span>
-            <h2>Presente com calma</h2>
-            <p>A experiencia privilegia uma compra simples, bonita e acolhedora do primeiro clique ao checkout.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="screen institutional-screen" id="careScreen" data-screen="care">
-        <div class="breadcrumb" aria-label="Caminho">
-          <a href="#shop">Inicio</a>
-          <strong>Cuidados com a vela</strong>
-        </div>
-        <section class="institutional-hero compact">
-          <p class="eyebrow">cuidados</p>
-          <h1>Acenda melhor, perfume por mais tempo.</h1>
-        </section>
-        <div class="care-list">
-          <article>
-            <h2>Primeira queima</h2>
-            <p>Deixe a cera derreter ate as bordas do recipiente antes de apagar. Isso ajuda a evitar tuneis.</p>
-          </article>
-          <article>
-            <h2>Pavio</h2>
-            <p>Apare o pavio antes de reacender. Uma chama menor deixa a queima mais limpa e estavel.</p>
-          </article>
-          <article>
-            <h2>Seguranca</h2>
-            <p>Use em superficie firme, longe de tecidos, criancas e correntes de ar. Nunca deixe a vela sem supervisao.</p>
-          </article>
-          <article>
-            <h2>Tempo de uso</h2>
-            <p>Evite manter acesa por muitas horas seguidas. Apague, espere esfriar e reacenda quando quiser continuar.</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="screen institutional-screen" id="faqScreen" data-screen="faq">
-        <div class="breadcrumb" aria-label="Caminho">
-          <a href="#shop">Inicio</a>
-          <strong>Perguntas frequentes</strong>
-        </div>
-        <section class="institutional-hero compact">
-          <p class="eyebrow">faq</p>
-          <h1>Duvidas comuns antes de escolher sua vela.</h1>
-        </section>
-        <div class="faq-list">
-          <details open>
-            <summary>As velas sao artesanais?</summary>
-            <p>Sim. A proposta da Calorine e trabalhar com lotes pequenos, acabamento manual e aromas selecionados.</p>
-          </details>
-          <details>
-            <summary>Como funciona o frete?</summary>
-            <p>No checkout, informe o CEP para simular prazo e valor. Pedidos acima do limite indicado podem ter entrega gratis.</p>
-          </details>
-          <details>
-            <summary>Posso favoritar produtos?</summary>
-            <p>Sim. Use o coracao nos cards ou na pagina do produto para montar sua lista de desejos.</p>
-          </details>
-          <details>
-            <summary>Como acompanho meu pedido?</summary>
-            <p>Depois de entrar na conta, acesse Minha conta para ver historico, status e itens comprados.</p>
-          </details>
-        </div>
-      </section>
-
-      <section class="screen admin-screen" id="adminScreen" data-screen="admin">
-        <div class="admin-topbar">
+      <section class="screen cart-page-screen" id="cartPageScreen" data-screen="cart">
+        <header class="page-head compact">
           <div>
-            <p class="eyebrow">backoffice</p>
-            <h2>Administracao Calorine</h2>
+            <p class="eyebrow">carrinho</p>
+            <h1>Meu carrinho</h1>
+            <p>Confira os produtos, calcule uma previa de entrega e aplique cupom antes de fechar.</p>
           </div>
-          <span class="session-pill" id="sessionPill">Visitante</span>
-        </div>
-
-        <div class="admin-locked" id="adminLocked">
-          <p class="eyebrow">acesso restrito</p>
-          <h3>Somente administradores podem acessar o painel.</h3>
-          <p class="muted">Entre com a conta administrativa para liberar operacao, pedidos e catalogo.</p>
-          <a class="primary-action" href="#login">Ir para login</a>
-        </div>
-
-        <div class="admin-shell" id="adminLayout">
-          <aside class="admin-sidebar" aria-label="Menu administrativo">
-            <div class="admin-sidebar-head">
-              <p class="eyebrow">operacao</p>
-              <strong>Calorine Admin</strong>
+          <a class="secondary-action" href="#shop">Adicionar mais produtos</a>
+        </header>
+        <div class="cart-page-grid">
+          <section class="cart-page-main">
+            <div class="cart-table-head"><span>Produto</span><span>Preco</span><span>Quantidade</span><span>Total</span></div>
+            <div id="cartPageItems"></div>
+            <div class="cart-page-tools">
+              <section>
+                <h2>Entrega</h2>
+                <label>CEP de entrega<input id="cartCep" maxlength="9" placeholder="00000-000" /></label>
+                <button class="ghost-action" id="calculateShipping" type="button">Calcular</button>
+                <p class="hint-text" id="shippingMessage">Pedidos acima de R$ 180,00 tem frete gratis.</p>
+              </section>
+              <section>
+                <h2>Cupom</h2>
+                <label>Cupom<input id="couponCode" placeholder="Ex: CALORINE10" /></label>
+                <button class="ghost-action" id="applyCoupon" type="button">Aplicar</button>
+                <p class="hint-text" id="couponMessage">Use CALORINE10 ou FRETEGRATIS.</p>
+              </section>
             </div>
-            <nav class="admin-nav">
-              <button class="is-active" type="button" data-admin-section="overview">Visao geral</button>
-              <button type="button" data-admin-section="orders">Pedidos</button>
-              <button type="button" data-admin-section="products">Velas</button>
-              <button type="button" data-admin-section="customers">Clientes</button>
-              <button type="button" data-admin-section="coupons">Cupons</button>
-              <button type="button" data-admin-section="settings">Configuracoes</button>
-            </nav>
-            <a class="admin-store-link" href="#shop">Ir para loja</a>
+          </section>
+          <aside class="cart-page-summary">
+            <h2>Resumo do pedido</h2>
+            <div class="summary-lines" id="checkoutFinalSummary"></div>
+            <button class="primary-action" id="closeOrder" type="button">Fechar pedido</button>
+            <a class="secondary-action" href="#shop">Escolher mais produtos</a>
+            <p class="secure-note">Compra segura. Seus dados sao protegidos e o estoque sera reservado ao finalizar.</p>
           </aside>
+        </div>
+      </section>
 
-          <section class="admin-workspace">
-            <header class="admin-workspace-head">
-              <div>
-                <p class="eyebrow" id="adminPanelEyebrow">painel</p>
-                <h3 id="adminPanelTitle">Visao geral</h3>
+      <section class="screen checkout-screen" id="checkoutScreen" data-screen="checkout">
+        <header class="page-head compact">
+          <div>
+            <p class="eyebrow">checkout</p>
+            <h1>Finalizar compra</h1>
+            <p>Confirme sua identificacao, escolha a entrega e gere o pedido.</p>
+          </div>
+          <a class="secondary-action" href="#cart">Voltar ao carrinho</a>
+        </header>
+        <div class="checkout-flow-grid">
+          <section class="checkout-stage">
+            <header>1. Identificacao</header>
+            <div class="checkout-stage-body">
+              <h3>Dados pessoais</h3>
+              <div class="checkout-personal-data">
+                <strong id="checkoutUserName">-</strong>
+                <span id="checkoutUserEmail">-</span>
+                <span id="checkoutUserPhone">-</span>
               </div>
-              <span class="admin-state">Ambiente administrativo</span>
-            </header>
-
-            <section class="admin-view is-active" data-admin-view="overview">
-              <div class="admin-dashboard" aria-label="Resumo administrativo">
-                <article>
-                  <span>Pedidos</span>
-                  <strong id="adminTotalOrders">0</strong>
-                </article>
-                <article>
-                  <span>Vendas</span>
-                  <strong id="adminTotalSales">R$ 0,00</strong>
-                </article>
-                <article>
-                  <span>Velas ativas</span>
-                  <strong id="adminActiveProducts">0</strong>
-                </article>
-                <article>
-                  <span>Estoque baixo</span>
-                  <strong id="adminLowStock">0</strong>
-                </article>
+              <hr />
+              <h3>Endereco para entrega</h3>
+              <div class="delivery-options">
+                <label><input name="deliveryChoice" type="radio" value="account" checked /> Meu endereco</label>
+                <label><input name="deliveryChoice" type="radio" value="other" /> Entregar em outro endereco</label>
               </div>
-              <div class="admin-split">
-                <section class="admin-section">
-                  <div class="admin-section-heading">
-                    <div>
-                      <p class="eyebrow">pedidos</p>
-                      <h3>Ultimos pedidos</h3>
-                    </div>
-                    <button class="small-button" type="button" data-admin-section="orders">Ver todos</button>
-                  </div>
-                  <div class="admin-orders compact" id="adminRecentOrders"></div>
-                </section>
-                <section class="admin-section">
-                  <div class="admin-section-heading">
-                    <div>
-                      <p class="eyebrow">estoque</p>
-                      <h3>Atencao no catalogo</h3>
-                    </div>
-                    <button class="small-button" type="button" data-admin-section="products">Gerenciar</button>
-                  </div>
-                  <div class="admin-list compact" id="adminStockAlerts"></div>
-                </section>
+              <div class="selected-address-card" id="accountDeliverySummary"></div>
+              <div class="other-address-fields" id="otherAddressFields" hidden>
+                <div class="shipping-row">
+                  <label>CEP da entrega<input id="checkoutCep" maxlength="9" placeholder="00000-000" /></label>
+                  <button class="ghost-action" id="calculateCheckoutShipping" type="button">Buscar CEP</button>
+                </div>
+                <div class="checkout-address-grid">
+                  <label>Rua<input id="deliveryStreet" required placeholder="Rua" /></label>
+                  <label>Numero<input id="deliveryNumber" required maxlength="12" placeholder="123" /></label>
+                  <label>Complemento<input id="deliveryComplement" maxlength="50" placeholder="Apto, bloco, referencia" /></label>
+                  <label>Bairro<input id="deliveryNeighborhood" required placeholder="Bairro" /></label>
+                  <label>Cidade<input id="deliveryCity" required placeholder="Cidade" /></label>
+                  <label>UF<input id="deliveryState" required maxlength="2" placeholder="SP" /></label>
+                </div>
               </div>
-            </section>
-
-            <section class="admin-view" data-admin-view="orders">
-              <section class="admin-section admin-orders-section">
-                <div class="admin-section-heading">
-                  <div>
-                    <p class="eyebrow">pedidos</p>
-                    <h3>Pedidos recebidos</h3>
-                  </div>
-                </div>
-                <div class="admin-orders" id="adminOrders"></div>
-              </section>
-            </section>
-
-            <section class="admin-view" data-admin-view="products">
-              <div class="admin-products-grid">
-                <form class="admin-form" id="productForm">
-                  <input type="hidden" id="productId" />
-                  <input type="hidden" id="productImageCurrent" />
-                  <input type="hidden" id="productExtraImageOneCurrent" />
-                  <input type="hidden" id="productExtraImageTwoCurrent" />
-                  <label>
-                    Nome da vela
-                    <input id="productName" required maxlength="48" placeholder="Ex: Brisa de Lavanda" />
-                  </label>
-                  <label>
-                    Aroma
-                    <input id="productScent" required maxlength="48" placeholder="Lavanda, baunilha, capim-limao" />
-                  </label>
-                  <div class="field-row">
-                    <label>
-                      Preco
-                      <input id="productPrice" required min="1" step="0.01" type="number" placeholder="49.90" />
-                    </label>
-                    <label>
-                      Estoque
-                      <input id="productStock" required min="0" step="1" type="number" placeholder="12" />
-                    </label>
-                  </div>
-                  <label>
-                    Familia de cor
-                    <select id="productColor">
-                      <option value="rose">Rosa queimado</option>
-                      <option value="sage">Verde salvia</option>
-                      <option value="honey">Mel</option>
-                      <option value="clay">Argila</option>
-                      <option value="ocean">Azul suave</option>
-                    </select>
-                  </label>
-                  <div class="field-row">
-                    <label>
-                      Tamanho
-                      <select id="productSize">
-                        <option value="120g">120g</option>
-                        <option value="250g">250g</option>
-                      </select>
-                    </label>
-                    <label>
-                      Sensacao
-                      <select id="productMood">
-                        <option value="aconchegante">Aconchegante</option>
-                        <option value="relaxante">Relaxante</option>
-                      </select>
-                    </label>
-                  </div>
-                  <label>
-                    Ocasiao
-                    <select id="productOccasion">
-                      <option value="classica">Classica</option>
-                      <option value="presente">Presente</option>
-                    </select>
-                  </label>
-                  <label>
-                    Descricao
-                    <textarea id="productDescription" required maxlength="160" placeholder="Conte o clima, o tamanho e a proposta da vela"></textarea>
-                  </label>
-                  <label>
-                    Imagem da vela
-                    <input id="productImage" type="file" accept="image/*" />
-                  </label>
-                  <div class="image-preview" id="productImagePreview">Sem imagem selecionada</div>
-                  <div class="field-row">
-                    <label>
-                      Miniatura extra 1
-                      <input id="productExtraImageOne" type="file" accept="image/*" />
-                    </label>
-                    <label>
-                      Miniatura extra 2
-                      <input id="productExtraImageTwo" type="file" accept="image/*" />
-                    </label>
-                  </div>
-                  <div class="field-row">
-                    <div class="image-preview" id="productExtraImageOnePreview">Sem imagem extra</div>
-                    <div class="image-preview" id="productExtraImageTwoPreview">Sem imagem extra</div>
-                  </div>
-                  <div class="form-actions">
-                    <button class="primary-action" type="submit">Salvar vela</button>
-                    <button class="ghost-action" id="clearForm" type="button">Limpar</button>
-                  </div>
-                  <p class="form-message" id="productMessage"></p>
-                </form>
-
-                <section class="admin-section">
-                  <div class="admin-section-heading">
-                    <div>
-                      <p class="eyebrow">catalogo</p>
-                      <h3>Velas cadastradas</h3>
-                    </div>
-                  </div>
-                  <div class="admin-list" id="adminList"></div>
-                </section>
+              <button class="secondary-action checkout-freight-button" id="calculateCheckoutFreight" type="button">Calcular frete para este endereco</button>
+              <p class="hint-text" id="checkoutShippingSummary">Escolha o endereco e calcule o frete.</p>
+              <div class="shipping-options" id="shippingOptions"></div>
+            </div>
+          </section>
+          <form class="checkout-stage" id="checkoutForm">
+            <header>2. Pagamento</header>
+            <div class="checkout-stage-body">
+              <h3>Escolha a forma de pagamento</h3>
+              <div class="payment-options">
+                <label><input name="paymentChoice" type="radio" value="pix" checked /><span><strong>Pix a vista</strong><small>Confirmacao simulada imediata</small></span></label>
+                <label><input name="paymentChoice" type="radio" value="card" /><span><strong>Cartao de credito</strong><small>Aprovacao simulada</small></span></label>
+                <label><input name="paymentChoice" type="radio" value="boleto" /><span><strong>Boleto bancario</strong><small>Vencimento em 2 dias uteis</small></span></label>
+                <label class="is-disabled"><input name="paymentChoice" type="radio" value="whatsapp" disabled /><span><strong>WhatsApp</strong><small>Disponivel em breve</small></span></label>
               </div>
-            </section>
+              <input id="paymentMethod" type="hidden" value="pix" />
+              <div class="payment-simulation" id="paymentSimulation"></div>
+              <button class="primary-action" type="submit">Ir para pagamento</button>
+              <button class="secondary-action" id="whatsappCheckout" type="button" disabled>WhatsApp indisponivel</button>
+              <p class="form-message" id="checkoutMessage"></p>
+            </div>
+          </form>
+          <aside class="checkout-stage">
+            <header>Resumo do pedido</header>
+            <div class="checkout-stage-body">
+              <div class="checkout-review-items" id="checkoutReviewItems"></div>
+              <div class="summary-lines" id="checkoutSummary"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
 
-            <section class="admin-view" data-admin-view="customers">
-              <section class="admin-section">
-                <div class="admin-section-heading">
-                  <div>
-                    <p class="eyebrow">clientes</p>
-                    <h3>Clientes com pedidos</h3>
-                  </div>
-                </div>
-                <div class="admin-list" id="adminCustomers"></div>
-              </section>
-            </section>
+      <section class="screen payment-screen" id="paymentScreen" data-screen="payment">
+        <div class="payment-page">
+          <section class="payment-thankyou">
+            <div class="payment-order-number"><p>Numero do pedido</p><strong id="paymentOrderNumber">CALORINE-00000</strong></div>
+            <div class="payment-success-copy"><p class="eyebrow">pagamento</p><h1>Concluir pagamento</h1><p>Seu pedido foi criado e sera confirmado assim que o pagamento for aprovado.</p></div>
+            <a class="secondary-action" href="#orders">Pagar depois</a>
+          </section>
+          <div class="payment-grid">
+            <section class="payment-card" id="paymentInstructions"></section>
+            <section class="payment-card"><h2>Endereco de entrega</h2><p id="paymentCustomerName"></p><p id="paymentDeliveryAddress"></p><p id="paymentShippingInfo"></p></section>
+            <section class="payment-card"><h2>Resumo do pedido</h2><div id="paymentItems"></div><div class="summary-lines" id="paymentSummary"></div></section>
+          </div>
+        </div>
+      </section>
 
-            <section class="admin-view" data-admin-view="coupons">
-              <section class="admin-section">
-                <div class="admin-section-heading">
-                  <div>
-                    <p class="eyebrow">promocoes</p>
-                    <h3>Cupons ativos</h3>
-                  </div>
-                </div>
-                <div class="admin-list">
-                  <article class="admin-item">
-                    <div>
-                      <h3>CALORINE10</h3>
-                      <p>10% de desconto no subtotal do carrinho.</p>
-                    </div>
-                    <span class="status-pill is-active">Ativo</span>
-                  </article>
-                  <article class="admin-item">
-                    <div>
-                      <h3>FRETEGRATIS</h3>
-                      <p>Remove o valor da entrega no checkout.</p>
-                    </div>
-                    <span class="status-pill is-active">Ativo</span>
-                  </article>
-                </div>
-              </section>
-            </section>
+      <section class="screen confirmation-screen" id="confirmationScreen" data-screen="confirmation">
+        <div class="confirmation-page">
+          <section class="confirmation-hero">
+            <div><p class="eyebrow">pagamento aprovado</p><h1>Compra confirmada</h1><p>Obrigada por escolher a Calorine. O pedido ja esta disponivel em Meus pedidos.</p></div>
+            <strong id="confirmationOrderNumber">CALORINE-00000</strong>
+            <a class="primary-action" href="#orders">Acompanhar pedido</a>
+          </section>
+          <div class="confirmation-grid">
+            <section><h2>Entrega</h2><p id="confirmationAddress"></p><p id="confirmationShipping"></p></section>
+            <section><h2>Resumo</h2><div class="summary-lines" id="confirmationSummary"></div></section>
+          </div>
+        </div>
+      </section>
 
-            <section class="admin-view" data-admin-view="settings">
-              <section class="admin-section">
-                <div class="admin-section-heading">
-                  <div>
-                    <p class="eyebrow">loja</p>
-                    <h3>Configuracoes operacionais</h3>
-                  </div>
-                </div>
-                <div class="admin-list">
-                  <article class="admin-item">
-                    <div>
-                      <h3>Checkout</h3>
-                      <p>Pagamento, frete e WhatsApp estao simulados para testes da loja.</p>
-                    </div>
-                    <span class="status-pill is-muted">Simulado</span>
-                  </article>
-                  <article class="admin-item">
-                    <div>
-                      <h3>E-mail de pedidos</h3>
-                      <p>A confirmacao fica registrada no pedido e pode evoluir para envio real.</p>
-                    </div>
-                    <span class="status-pill is-muted">Pendente</span>
-                  </article>
-                </div>
-              </section>
-            </section>
+      <section class="screen account-screen" id="accountScreen" data-screen="account">
+        <div class="account-grid">
+          <section class="account-hero">
+            <p class="eyebrow">minha conta</p>
+            <h1 id="accountGreeting">Ola</h1>
+            <p id="accountHeroDescription">Confira e mantenha seus dados pessoais organizados.</p>
+          </section>
+          <section class="account-data">
+            <article><span>Nome</span><strong id="accountName">-</strong></article>
+            <article><span>E-mail</span><strong id="accountEmail">-</strong></article>
+            <article id="accountPhoneCard"><span>Telefone</span><strong id="accountPhone">-</strong></article>
+            <article class="account-address" id="accountAddressCard">
+              <span>Endereco</span>
+              <div class="account-address-grid">
+                <div><small>CEP</small><strong id="accountCep">-</strong></div>
+                <div><small>Rua</small><strong id="accountStreet">-</strong></div>
+                <div><small>Numero</small><strong id="accountNumber">-</strong></div>
+                <div><small>Bairro</small><strong id="accountNeighborhood">-</strong></div>
+                <div><small>Complemento</small><strong id="accountComplement">-</strong></div>
+                <div><small>Cidade/UF</small><strong id="accountCityState">-</strong></div>
+              </div>
+            </article>
+            <article><span>Perfil</span><strong id="accountRole">-</strong></article>
+            <div class="account-actions">
+              <a class="primary-action" href="#shop">Ir para loja</a>
+              <a class="secondary-action" href="#profile-edit" id="editProfileButton">Editar dados</a>
+              <a class="secondary-action" href="#admin" id="accountAdminButton">Painel admin</a>
+            </div>
           </section>
         </div>
       </section>
 
-      <section class="screen" id="loginScreen" data-screen="login">
-        <div class="auth-panel">
-          <div class="auth-copy">
-            <p class="eyebrow">acesso</p>
-            <h2>Entrar na loja</h2>
-            <p class="muted">Entre com uma conta cadastrada para acompanhar pedidos e agilizar o checkout.</p>
-            <a class="auth-switch" href="#register">Ainda nao tenho conta</a>
-          </div>
-          <form id="loginForm" class="auth-form">
-            <label>
-              E-mail
-              <input id="loginEmail" required type="email" placeholder="voce@email.com" />
-            </label>
-            <label>
-              Senha
-              <input id="loginPassword" required minlength="6" type="password" placeholder="Sua senha" />
-            </label>
+      <section class="screen orders-screen" id="ordersScreen" data-screen="orders">
+        <section class="account-history">
+          <div class="orders-head"><div><p class="eyebrow">sua conta</p><h2>Meus pedidos</h2><p class="orders-description">Acompanhe o andamento e consulte suas compras.</p></div><a class="secondary-action" href="#shop">Continuar comprando</a></div>
+          <div class="review-notifications" id="reviewNotifications"></div>
+          <div class="admin-list" id="accountOrders"></div>
+          <aside class="customer-order-detail" id="customerOrderDetail" hidden></aside>
+        </section>
+      </section>
+
+      <section class="screen favorites-screen" id="favoritesScreen" data-screen="favorites">
+        <div class="section-head"><div><p class="eyebrow">sua selecao</p><h1>Favoritos</h1><p>Velas que voce guardou para consultar depois.</p></div><a class="secondary-action" href="#shop">Ver todas as velas</a></div>
+        <div class="product-grid" id="favoriteProducts"></div>
+      </section>
+
+      <section class="screen profile-edit-screen" id="profileEditScreen" data-screen="profile-edit">
+        <div class="profile-edit-grid">
+          <form class="admin-form" id="profileForm"><p class="eyebrow">dados pessoais</p><h1>Editar perfil</h1><div class="field-row"><label>Nome<input id="profileName" required /></label><label>Telefone<input id="profilePhone" required /></label></div><h3>Endereco principal</h3><div class="field-row"><label>CEP<input id="profileCep" maxlength="9" /></label><label>Numero<input id="profileNumber" required /></label></div><label>Rua<input id="profileStreet" required /></label><label>Complemento<input id="profileComplement" /></label><div class="field-row"><label>Bairro<input id="profileNeighborhood" required /></label><label>Cidade<input id="profileCity" required /></label></div><label>UF<input id="profileState" maxlength="2" required /></label><label class="checkbox-field"><input id="profileMarketing" type="checkbox" /> Quero receber novidades</label><button class="primary-action" type="submit">Salvar alteracoes</button><p class="form-message" id="profileMessage"></p></form>
+          <form class="admin-form password-form" id="passwordForm"><p class="eyebrow">seguranca</p><h2>Alterar senha</h2><label>Senha atual<input id="currentPassword" type="password" required /></label><label>Nova senha<input id="newPassword" type="password" minlength="6" required /></label><label>Confirmar nova senha<input id="confirmPassword" type="password" minlength="6" required /></label><button class="secondary-action" type="submit">Atualizar senha</button><p class="form-message" id="passwordMessage"></p></form>
+        </div>
+      </section>
+
+      <section class="screen login-screen" id="loginScreen" data-screen="login">
+        <div class="auth-grid">
+          <section class="auth-card">
+            <p class="eyebrow" id="loginEyebrow">acesso</p>
+            <h1 id="loginTitle">Entrar na loja</h1>
+            <p id="loginDescription">Entre com sua conta para acompanhar pedidos e agilizar o checkout.</p>
+            <button class="secondary-action" id="showRegister" type="button">Ainda nao tenho conta</button>
+          </section>
+          <form class="admin-form" id="loginForm">
+            <div class="login-form-heading"><p class="eyebrow">identificacao</p><h2 id="loginFormTitle">Acesse sua conta</h2></div>
+            <label>E-mail<input id="loginEmail" type="email" autocomplete="email" required /></label>
+            <label>Senha<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
             <button class="primary-action" type="submit">Entrar</button>
-            <button class="ghost-action" id="logoutButton" type="button">Sair</button>
+            <button class="secondary-action" id="logoutButton" type="button">Sair</button>
+            <p class="hint-text" id="adminLoginHint" hidden>Admin teste: admin@calorine.com / admin123</p>
             <p class="form-message" id="loginMessage"></p>
           </form>
         </div>
       </section>
 
-      <section class="screen" id="registerScreen" data-screen="register">
-        <div class="auth-panel">
-          <div class="auth-copy">
-            <p class="eyebrow">cadastro de usuario</p>
-            <h2>Criar conta</h2>
-            <p class="muted">Cadastre os dados principais para simular uma area de cliente da loja.</p>
-            <a class="auth-switch" href="#login">Ja tenho conta</a>
-          </div>
-          <form id="registerForm" class="auth-form">
-            <div class="field-row">
-              <label>
-                Nome
-                <input id="registerName" required maxlength="70" placeholder="Seu nome" />
-              </label>
-              <label>
-                Telefone
-                <input id="registerPhone" required inputmode="tel" maxlength="20" placeholder="(11) 99999-9999" />
-              </label>
-            </div>
-            <label>
-              E-mail
-              <input id="registerEmail" required type="email" placeholder="voce@email.com" />
-            </label>
-            <div class="field-row">
-              <label>
-                Senha
-                <input id="registerPassword" required minlength="6" type="password" placeholder="Minimo 6 caracteres" />
-              </label>
-              <label>
-                Confirmar senha
-                <input id="registerPasswordConfirm" required minlength="6" type="password" placeholder="Repita a senha" />
-              </label>
-            </div>
-            <div class="address-block">
-              <div class="field-row address-zip-row">
-                <label>
-                  CEP
-                  <input id="registerCep" required inputmode="numeric" maxlength="9" placeholder="00000-000" autocomplete="postal-code" />
-                </label>
-                <label>
-                  Numero
-                  <input id="registerNumber" required maxlength="12" placeholder="123" autocomplete="address-line2" />
-                </label>
-              </div>
-              <label>
-                Rua
-                <input id="registerStreet" required maxlength="90" placeholder="Rua" autocomplete="address-line1" />
-              </label>
-              <div class="field-row">
-                <label>
-                  Bairro
-                  <input id="registerNeighborhood" required maxlength="50" placeholder="Bairro" />
-                </label>
-                <label>
-                  Complemento
-                  <input id="registerComplement" maxlength="50" placeholder="Apto, bloco, referencia" />
-                </label>
-              </div>
-              <div class="field-row city-state-row">
-                <label>
-                  Cidade
-                  <input id="registerCity" required maxlength="50" placeholder="Cidade" autocomplete="address-level2" />
-                </label>
-                <label>
-                  UF
-                  <input id="registerState" required maxlength="2" placeholder="SP" autocomplete="address-level1" />
-                </label>
-              </div>
-              <p class="hint-text" id="cepMessage">Digite o CEP para preencher o endereco.</p>
-            </div>
-            <label class="check-field">
-              <input id="registerMarketing" type="checkbox" />
-              <span>Quero receber novidades e colecoes especiais.</span>
-            </label>
-            <button class="primary-action" type="submit">Criar conta</button>
-            <p class="form-message" id="registerMessage"></p>
-          </form>
-        </div>
+      <section class="screen register-screen" id="registerScreen" data-screen="register">
+        <form class="admin-form register-form" id="registerForm">
+          <p class="eyebrow">cadastro</p>
+          <h1>Criar conta</h1>
+          <div class="field-row"><label>Nome<input id="registerName" required /></label><label>Telefone<input id="registerPhone" required /></label></div>
+          <div class="field-row"><label>E-mail<input id="registerEmail" type="email" required /></label><label>Senha<input id="registerPassword" type="password" required minlength="6" /></label></div>
+          <h3>Endereco</h3>
+          <div class="field-row"><label>CEP <small>(opcional)</small><input id="registerCep" maxlength="9" inputmode="numeric" /></label><label>Numero<input id="registerNumber" required /></label></div>
+          <p class="field-feedback" id="registerCepMessage">Se nao souber o CEP, preencha o endereco e tentaremos localiza-lo.</p>
+          <label>Rua<input id="registerStreet" required /></label>
+          <label>Complemento<input id="registerComplement" /></label>
+          <div class="field-row"><label>Bairro<input id="registerNeighborhood" required /></label><label>Cidade<input id="registerCity" required /></label></div>
+          <label>UF<input id="registerState" maxlength="2" required /></label>
+          <label class="checkbox-field"><input id="registerMarketing" type="checkbox" /> Quero receber novidades</label>
+          <button class="primary-action" type="submit">Cadastrar</button>
+          <p class="form-message" id="registerMessage"></p>
+        </form>
       </section>
 
-      <section class="screen" id="accountScreen" data-screen="account">
-        <div class="auth-panel">
-          <div class="auth-copy">
-            <p class="eyebrow">minha conta</p>
-            <h2 id="accountTitle">Conta</h2>
-            <p class="muted" id="accountIntro">Confira os dados da sessao atual e acesse as areas disponiveis para o seu perfil.</p>
-          </div>
-          <div class="account-summary">
-            <div>
-              <span>Nome</span>
-              <strong id="accountName">-</strong>
-            </div>
-            <div>
-              <span>E-mail</span>
-              <strong id="accountEmail">-</strong>
-            </div>
-            <div>
-              <span>Telefone</span>
-              <strong id="accountPhone">-</strong>
-            </div>
-            <div class="account-address-card">
-              <span>Endereco</span>
-              <div class="account-address-grid">
-                <div>
-                  <small>CEP</small>
-                  <strong id="accountAddressCep">-</strong>
-                </div>
-                <div>
-                  <small>Rua</small>
-                  <strong id="accountAddressStreet">-</strong>
-                </div>
-                <div>
-                  <small>Numero</small>
-                  <strong id="accountAddressNumber">-</strong>
-                </div>
-                <div>
-                  <small>Bairro</small>
-                  <strong id="accountAddressNeighborhood">-</strong>
-                </div>
-                <div>
-                  <small>Complemento</small>
-                  <strong id="accountAddressComplement">-</strong>
-                </div>
-                <div>
-                  <small>Cidade/UF</small>
-                  <strong id="accountAddressCityState">-</strong>
-                </div>
+      <section class="screen admin-screen" id="adminScreen" data-screen="admin">
+        <div class="admin-shell">
+          <aside class="admin-sidebar">
+            <p class="eyebrow">admin</p>
+            <h2>Calorine</h2>
+            <button data-admin-section="overview">Dashboard</button>
+            <button data-admin-section="orders">Pedidos</button>
+            <button data-admin-section="products">Produtos</button>
+            <button data-admin-section="customers">Clientes</button>
+            <button class="admin-logout-button" id="adminLogoutButton" type="button">Sair da conta</button>
+          </aside>
+          <section class="admin-workspace" id="adminLayout">
+            <div class="admin-locked" id="adminLocked">
+              <span class="admin-access-mark">Admin</span>
+              <p class="eyebrow">painel administrativo</p>
+              <h1>Acesso restrito</h1>
+              <p>Entre com uma conta de administradora para gerenciar pedidos, produtos e clientes.</p>
+              <div class="admin-login-actions">
+                <button class="primary-action" id="adminLoginButton" type="button">Entrar como administradora</button>
+                <a class="secondary-action" href="#shop">Voltar para a loja</a>
               </div>
             </div>
-            <div>
-              <span>Perfil</span>
-              <strong id="accountRole">-</strong>
+            <div class="admin-view active" data-admin-view="overview">
+              <div class="admin-dashboard">
+                <article><span>Pedidos</span><strong id="adminTotalOrders">0</strong></article>
+                <article><span>Vendas</span><strong id="adminTotalSales">R$ 0,00</strong></article>
+                <article><span>Produtos ativos</span><strong id="adminActiveProducts">0</strong></article>
+                <article><span>Estoque baixo</span><strong id="adminLowStock">0</strong></article>
+              </div>
+              <section class="admin-section"><h3>Vendas por status</h3><div class="admin-sales-chart" id="adminSalesChart"></div></section>
+              <section class="admin-section"><h3>Pedidos recentes</h3><div class="admin-orders compact" id="adminRecentOrders"></div></section>
+              <section class="admin-section"><h3>Alertas de estoque</h3><div class="admin-list compact" id="adminStockAlerts"></div></section>
             </div>
-            <div class="form-actions">
-              <a class="primary-action" href="#shop">Ir para loja</a>
-              <a class="secondary-action admin-only" href="#admin">Cadastrar velas</a>
+            <div class="admin-view" data-admin-view="orders">
+              <p class="admin-dashboard-message" id="adminDashboardMessage" hidden></p>
+              <section class="admin-section">
+                <h3>Pedidos recebidos</h3>
+                <div class="admin-toolbar"><label>Buscar cliente<input id="adminOrderSearch" /></label><label>Status<select id="adminOrderStatusFilter"><option value="ALL">Todos</option><option value="PENDING_PAYMENT">Aguardando pagamento</option><option value="PAID">Pago</option><option value="CREATED">Recebido</option><option value="PREPARING">Preparando</option><option value="SHIPPED">Enviado</option><option value="DELIVERED">Entregue</option><option value="CANCELED">Cancelado</option></select></label><button class="secondary-action" id="exportOrders" type="button">Exportar CSV</button></div>
+                <div class="admin-orders-layout"><div class="admin-orders" id="adminOrders"></div><aside class="admin-order-detail" id="adminOrderDetail"><p class="empty-state">Selecione um pedido.</p></aside></div>
+              </section>
             </div>
-          </div>
-
-          <section class="account-orders">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">historico</p>
-                <h2>Meus pedidos</h2>
+            <div class="admin-view" data-admin-view="products">
+              <div class="admin-products-grid">
+                <form class="admin-form" id="productForm">
+                  <input type="hidden" id="productId" /><input type="hidden" id="productImageCurrent" /><input type="hidden" id="productExtraImageOneCurrent" /><input type="hidden" id="productExtraImageTwoCurrent" />
+                  <label>Nome da vela<input id="productName" required /></label>
+                  <label>Aroma<input id="productScent" required /></label>
+                  <div class="field-row"><label>Preco<input id="productPrice" type="number" step="0.01" required /></label><label>Estoque<input id="productStock" type="number" step="1" required /></label></div>
+                  <div class="field-row"><label>Estoque minimo<input id="productMinimumStock" type="number" value="5" required /></label><label class="checkbox-field"><input id="productActive" type="checkbox" checked /> Produto ativo</label></div>
+                  <div class="field-row"><label>Tamanho<select id="productSize"><option value="120g">120g</option><option value="250g">250g</option></select></label><label>Sensacao<select id="productMood"><option value="aconchegante">Aconchegante</option><option value="relaxante">Relaxante</option></select></label></div>
+                  <div class="field-row"><label>Cor<select id="productColor"><option value="sage">Verde salvia</option><option value="honey">Mel</option><option value="rose">Rosa</option><option value="clay">Argila</option><option value="ocean">Azul suave</option></select></label><label>Ocasiao<select id="productOccasion"><option value="classica">Classica</option><option value="presente">Presente</option></select></label></div>
+                  <label>Descricao<textarea id="productDescription" maxlength="160"></textarea></label>
+                  <label>Imagem<input id="productImage" type="file" accept="image/*" /></label><div class="image-preview" id="productImagePreview">Sem imagem</div>
+                  <div class="field-row"><label>Extra 1<input id="productExtraImageOne" type="file" accept="image/*" /></label><label>Extra 2<input id="productExtraImageTwo" type="file" accept="image/*" /></label></div>
+                  <div class="field-row"><div class="image-preview" id="productExtraImageOnePreview">Sem imagem</div><div class="image-preview" id="productExtraImageTwoPreview">Sem imagem</div></div>
+                  <div class="form-actions"><button class="primary-action" type="submit">Salvar vela</button><button class="secondary-action" id="clearForm" type="button">Limpar</button></div>
+                  <p class="form-message" id="productMessage"></p>
+                </form>
+                <section class="admin-section"><h3>Velas cadastradas</h3><div class="admin-list" id="adminList"></div></section>
               </div>
             </div>
-            <div class="order-list" id="accountOrders"></div>
+            <div class="admin-view" data-admin-view="customers"><section class="admin-section"><h3>Clientes</h3><div class="admin-list" id="adminCustomers"></div></section></div>
           </section>
         </div>
       </section>
+
+      <section class="screen info-screen" id="sobreScreen" data-screen="sobre"><h1>Sobre a Calorine</h1><p>Velas artesanais criadas para transformar ambientes com cuidado, aroma e presenca.</p></section>
+      <section class="screen info-screen" id="cuidadosScreen" data-screen="cuidados"><h1>Cuidados com a vela</h1><p>Apare o pavio antes de acender e mantenha longe de correntes de ar.</p></section>
+      <section class="screen info-screen" id="faqScreen" data-screen="faq"><h1>Perguntas frequentes</h1><p>O checkout usa pagamento simulado neste ambiente de desenvolvimento.</p></section>
     </main>
 
-    <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
-      <div class="cart-panel" role="dialog" aria-modal="true" aria-label="Carrinho">
-        <div class="cart-header">
-          <div>
-            <p class="eyebrow">pedido</p>
-            <h2>Carrinho</h2>
-          </div>
-          <button class="icon-button" id="closeCart" type="button" aria-label="Fechar carrinho">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div class="cart-items" id="cartItems"></div>
-
-        <form class="checkout" id="checkoutForm">
-          <div class="checkout-summary">
-            <div>
-              <span>Itens</span>
-              <strong id="checkoutItems">0</strong>
-            </div>
-            <div>
-              <span>Subtotal</span>
-              <strong id="cartSubtotal">R$ 0,00</strong>
-            </div>
-            <div>
-              <span>Entrega</span>
-              <strong id="cartDelivery">A calcular</strong>
-            </div>
-          </div>
-          <div class="totals">
-            <span>Total</span>
-            <strong id="cartTotal">R$ 0,00</strong>
-          </div>
-          <div class="checkout-preview" id="checkoutPreview"></div>
-
-          <section class="checkout-step">
-            <span>1</span>
-            <div>
-              <h3>Entrega</h3>
-              <div class="shipping-row">
-                <label>
-                  CEP
-                  <input id="cartCep" inputmode="numeric" maxlength="9" placeholder="00000-000" />
-                </label>
-                <button class="ghost-action" id="calculateShipping" type="button">OK</button>
-              </div>
-              <p class="hint-text" id="shippingMessage">Informe o CEP para calcular uma entrega estimada.</p>
-              <label>
-                Endereco
-                <input id="deliveryAddress" required placeholder="Rua, numero, bairro e cidade" />
-              </label>
-            </div>
-          </section>
-
-          <section class="checkout-step">
-            <span>2</span>
-            <div>
-              <h3>Pagamento</h3>
-              <label>
-                Cupom
-                <div class="coupon-row">
-                  <input id="couponCode" maxlength="24" placeholder="Ex: CALORINE10" />
-                  <button class="ghost-action" id="applyCoupon" type="button">Aplicar</button>
-                </div>
-              </label>
-              <p class="hint-text" id="couponMessage">Use CALORINE10 ou FRETEGRATIS para simular descontos.</p>
-              <label>
-                Forma de pagamento
-                <select id="paymentMethod">
-                  <option value="pix">Pix</option>
-                  <option value="card">Cartao de credito</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="boleto">Boleto</option>
-                </select>
-              </label>
-              <div class="payment-simulation" id="paymentSimulation"></div>
-            </div>
-          </section>
-
-          <section class="checkout-step">
-            <span>3</span>
-            <div>
-              <h3>Confirmacao</h3>
-              <button class="primary-action" type="submit">Finalizar pedido</button>
-              <button class="secondary-action" id="whatsappCheckout" type="button">Finalizar pelo WhatsApp</button>
-            </div>
-          </section>
-          <p class="checkout-message" id="checkoutMessage"></p>
-        </form>
-      </div>
-    </aside>
-
-    <aside class="cart-drawer favorites-drawer" id="favoritesDrawer" aria-hidden="true">
-      <div class="cart-panel" role="dialog" aria-modal="true" aria-label="Favoritos">
-        <div class="cart-header">
-          <div>
-            <p class="eyebrow">selecionados</p>
-            <h2>Favoritos</h2>
-          </div>
-          <button class="icon-button" id="closeFavorites" type="button" aria-label="Fechar favoritos">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div class="cart-items favorite-items" id="favoriteItems"></div>
-      </div>
-    </aside>
-
     <footer class="site-footer">
-      <span>Calorine Velas</span>
-      <strong>Desenvolvido por Reynaldo Miquelino Neto</strong>
+      <p>Artes&atilde; das velas <strong>Caroline Yamada</strong></p>
+      <p>Desenvolvedor <strong>Reynaldo Miquelino Neto</strong></p>
     </footer>
 
-    <template id="productTemplate">
-      <article class="product-card">
-        <div class="product-art">
-          <span class="product-badge">Novidade</span>
-          <button class="product-favorite" type="button" aria-label="Adicionar aos favoritos">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" /></svg>
-          </button>
-          <img class="product-photo" alt="" />
-          <span class="product-flame"></span>
-          <span class="product-jar"></span>
-        </div>
-        <div class="product-info">
-          <span class="tag"></span>
-          <h3></h3>
-          <p></p>
-          <div class="product-footer">
-            <strong></strong>
-            <button type="button">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7Z" /><path d="M9 7a3 3 0 0 1 6 0" /></svg>
-              <span>Adicionar</span>
-            </button>
-          </div>
-        </div>
-      </article>
-    </template>
+    <div class="cart-drawer" id="cartDrawer" aria-hidden="true">
+      <aside class="cart-panel">
+        <header><div><p class="eyebrow">pedido</p><h2>Carrinho</h2></div><button class="icon-button" id="closeCart" type="button">×</button></header>
+        <div class="cart-list" id="cartItems"></div>
+        <div class="cart-drawer-summary"><div><span>Itens</span><strong id="drawerItems">0</strong></div><div><span>Total parcial</span><strong id="drawerTotal">R$ 0,00</strong></div><button class="primary-action" id="goCheckout" type="button">Finalizar compra</button></div>
+      </aside>
+    </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=20260622-6"></script>
   </body>
 </html>
-
-
-

@@ -16,6 +16,7 @@ public record OrderRequest(
     @Size(max = 30) String couponCode,
     BigDecimal discountTotal,
     @Size(max = 12) String shippingCep,
+    @Size(max = 30) String shippingService,
     BigDecimal shippingCost,
     Integer shippingDays,
     @Size(max = 30) String paymentSimulation,

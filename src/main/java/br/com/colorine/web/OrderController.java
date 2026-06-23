@@ -40,9 +40,15 @@ public class OrderController {
     return orderService.create(request, currentUser);
   }
 
+  @PutMapping("/{id}/payment/confirm")
+  @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+  public OrderResponse confirmPayment(@PathVariable("id") Long id, Authentication authentication) {
+    return orderService.confirmPayment(id, securityService.currentUser(authentication));
+  }
+
   @GetMapping("/customer/{customerId}")
   @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
-  public List<OrderResponse> listByCustomer(@PathVariable Long customerId, Authentication authentication) {
+  public List<OrderResponse> listByCustomer(@PathVariable("customerId") Long customerId, Authentication authentication) {
     securityService.requireSameUserOrAdmin(securityService.currentUser(authentication), customerId);
     return orderService.listByCustomer(customerId);
   }
@@ -55,7 +61,7 @@ public class OrderController {
 
   @PutMapping("/{id}/status")
   @PreAuthorize("hasRole('ADMIN')")
-  public OrderResponse updateStatus(@PathVariable Long id, @Valid @RequestBody OrderStatusRequest request) {
+  public OrderResponse updateStatus(@PathVariable("id") Long id, @Valid @RequestBody OrderStatusRequest request) {
     return orderService.updateStatus(id, request.status());
   }
 }

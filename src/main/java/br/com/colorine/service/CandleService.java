@@ -19,23 +19,19 @@ public class CandleService {
 
   @Transactional(readOnly = true)
   public List<CandleResponse> listActive() {
-    return candles.findByActiveTrueOrderByName().stream()
-        .map(this::toResponse)
-        .toList();
+    return candles.findByActiveTrueOrderByName().stream().map(this::toResponse).toList();
   }
 
   @Transactional(readOnly = true)
   public List<CandleResponse> listAll() {
-    return candles.findAllByOrderByName().stream()
-        .map(this::toResponse)
-        .toList();
+    return candles.findAllByOrderByName().stream().map(this::toResponse).toList();
   }
 
   @Transactional
   public CandleResponse create(CandleRequest request) {
     CandleProduct candle = new CandleProduct();
     applyRequest(candle, request);
-    candle.setActive(true);
+    candle.setActive(request.active() == null || request.active());
     return toResponse(candles.save(candle));
   }
 
@@ -47,16 +43,15 @@ public class CandleService {
   }
 
   @Transactional
-  public void deactivate(Long id) {
-    CandleProduct candle = findById(id);
-    candle.setActive(false);
-  }
-
-  @Transactional
   public CandleResponse setActive(Long id, boolean active) {
     CandleProduct candle = findById(id);
     candle.setActive(active);
     return toResponse(candle);
+  }
+
+  @Transactional
+  public void deactivate(Long id) {
+    findById(id).setActive(false);
   }
 
   private CandleProduct findById(Long id) {
@@ -70,6 +65,8 @@ public class CandleService {
     candle.setDescription(request.description().trim());
     candle.setPrice(request.price());
     candle.setStock(request.stock());
+    candle.setMinimumStock(request.minimumStock() == null ? 5 : request.minimumStock());
+    if (request.active() != null) candle.setActive(request.active());
     candle.setColor(request.color().trim());
     candle.setSize(request.size().trim());
     candle.setOccasion(request.occasion().trim());
@@ -81,22 +78,8 @@ public class CandleService {
 
   private CandleResponse toResponse(CandleProduct candle) {
     return new CandleResponse(
-        candle.getId(),
-        candle.getName(),
-        candle.getScent(),
-        candle.getDescription(),
-        candle.getPrice(),
-        candle.getStock(),
-        candle.getColor(),
-        candle.getSize(),
-        candle.getOccasion(),
-        candle.getMood(),
-        candle.getImageUrl(),
-        candle.getExtraImageUrlOne(),
-        candle.getExtraImageUrlTwo(),
-        candle.isActive()
-    );
+        candle.getId(), candle.getName(), candle.getScent(), candle.getDescription(), candle.getPrice(),
+        candle.getStock(), candle.getMinimumStock(), candle.getColor(), candle.getSize(), candle.getOccasion(),
+        candle.getMood(), candle.getImageUrl(), candle.getExtraImageUrlOne(), candle.getExtraImageUrlTwo(), candle.isActive());
   }
 }
-
-

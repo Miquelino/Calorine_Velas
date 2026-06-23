@@ -1,174 +1,1359 @@
 const storageKeys = {
   cart: "calorine-cart",
   user: "calorine-user",
-  favorites: "calorine-favorites",
+  adminUser: "calorine-admin-user",
   shipping: "calorine-shipping",
   coupon: "calorine-coupon",
-  reviews: "calorine-reviews",
+  favorites: "calorine-favorites",
+  pendingOrder: "calorine-pending-order",
 };
 
 const apiBase = location.protocol === "file:" || location.port !== "8080" ? "http://localhost:8080" : "";
+const isAdminPortal = location.pathname === "/admin" || location.pathname === "/admin/" || location.hash === "#admin";
+const activeUserStorageKey = isAdminPortal ? storageKeys.adminUser : storageKeys.user;
+const storeWhatsAppNumber = "5516999999999";
 
 const seedProducts = [
-  {
-    id: "brisa-de-lavanda",
-    name: "Brisa de Lavanda",
-    scent: "Lavanda e alecrim",
-    size: "250g",
-    occasion: "classica",
-    mood: "relaxante",
-    price: 54.9,
-    stock: 18,
-    color: "sage",
-    description: "Vela calmante em pote de vidro, ideal para banho relaxante ou leitura no fim do dia.",
-  },
-  {
-    id: "doce-baunilha",
-    name: "Doce Baunilha",
-    scent: "Baunilha e tonka",
-    size: "120g",
-    occasion: "classica",
-    mood: "aconchegante",
-    price: 49.9,
-    stock: 24,
-    color: "honey",
-    description: "Aroma acolhedor e cremoso, feito para deixar a casa com cheiro de sobremesa elegante.",
-  },
-  {
-    id: "figo-rosado",
-    name: "Figo Rosado",
-    scent: "Figo, rosas e madeira",
-    size: "250g",
-    occasion: "presente",
-    mood: "aconchegante",
-    price: 64.9,
-    stock: 10,
-    color: "rose",
-    description: "Uma vela marcante para presente, com perfume floral frutado e acabamento artesanal.",
-  },
-  {
-    id: "mar-de-linho",
-    name: "Mar de Linho",
-    scent: "Algodao, sal e cedro",
-    size: "120g",
-    occasion: "classica",
-    mood: "relaxante",
-    price: 59.9,
-    stock: 14,
-    color: "ocean",
-    description: "Fresca e limpa, perfeita para sala, lavabo e ambientes que pedem leveza.",
-  },
+  { id: "brisa-de-lavanda", name: "Brisa de Lavanda", scent: "Lavanda e alecrim", size: "120g", occasion: "classica", mood: "relaxante", price: 54.9, stock: 18, minimumStock: 5, color: "sage", active: true, description: "Vela calmante em pote de vidro, ideal para banho relaxante ou leitura no fim do dia." },
+  { id: "doce-baunilha", name: "Doce Baunilha", scent: "Baunilha e tonka", size: "120g", occasion: "classica", mood: "aconchegante", price: 49.9, stock: 24, minimumStock: 5, color: "honey", active: true, description: "Aroma acolhedor e cremoso, feito para deixar a casa com cheiro de sobremesa elegante." },
+  { id: "figo-rosado", name: "Figo Rosado", scent: "Figo, rosas e madeira", size: "250g", occasion: "presente", mood: "aconchegante", price: 64.9, stock: 10, minimumStock: 5, color: "rose", active: true, description: "Uma vela marcante para presente, com perfume floral frutado e acabamento artesanal." },
+  { id: "mar-de-linho", name: "Mar de Linho", scent: "Algodao, sal e cedro", size: "250g", occasion: "classica", mood: "relaxante", price: 59.9, stock: 14, minimumStock: 5, color: "ocean", active: true, description: "Fresca e limpa, perfeita para sala, lavabo e ambientes que pedem leveza." },
 ];
 
 let products = seedProducts;
 let cart = readStorage(storageKeys.cart, []);
-let user = readStorage(storageKeys.user, null);
-let favoriteIds = readStorage(storageKeys.favorites, []);
-let shippingQuote = readStorage(storageKeys.shipping, { cep: "", cost: null, days: null });
+let user = readStorage(activeUserStorageKey, null);
+if (!isAdminPortal && user?.role === "ADMIN") {
+  localStorage.removeItem(storageKeys.user);
+  user = null;
+}
+if (isAdminPortal && user?.role !== "ADMIN") {
+  localStorage.removeItem(storageKeys.adminUser);
+  user = null;
+}
+let shippingQuote = readStorage(storageKeys.shipping, { cep: "", cost: null, days: null, service: "economico" });
 let coupon = readStorage(storageKeys.coupon, { code: "", discount: 0, freeShipping: false });
-let reviews = readStorage(storageKeys.reviews, {});
 let currentProductId = null;
-
-const productGrid = document.querySelector("#productGrid");
-const productTemplate = document.querySelector("#productTemplate");
-const relatedProducts = document.querySelector("#relatedProducts");
-const searchInput = document.querySelector("#searchInput");
-const sortProducts = document.querySelector("#sortProducts");
-const cartDrawer = document.querySelector("#cartDrawer");
-const favoritesDrawer = document.querySelector("#favoritesDrawer");
-const cartItems = document.querySelector("#cartItems");
-const favoriteItems = document.querySelector("#favoriteItems");
-const cartCount = document.querySelector("#cartCount");
-const favoriteCount = document.querySelector("#favoriteCount");
-const cartTotal = document.querySelector("#cartTotal");
-const cartSubtotal = document.querySelector("#cartSubtotal");
-const checkoutItems = document.querySelector("#checkoutItems");
-const checkoutPreview = document.querySelector("#checkoutPreview");
-const cartDelivery = document.querySelector("#cartDelivery");
-const checkoutMessage = document.querySelector("#checkoutMessage");
-const accountOrders = document.querySelector("#accountOrders");
-const adminList = document.querySelector("#adminList");
-const adminOrders = document.querySelector("#adminOrders");
-const adminRecentOrders = document.querySelector("#adminRecentOrders");
-const adminStockAlerts = document.querySelector("#adminStockAlerts");
-const adminCustomers = document.querySelector("#adminCustomers");
-const sessionPill = document.querySelector("#sessionPill");
-const productForm = document.querySelector("#productForm");
-const productImageInput = document.querySelector("#productImage");
-const productExtraImageOneInput = document.querySelector("#productExtraImageOne");
-const productExtraImageTwoInput = document.querySelector("#productExtraImageTwo");
-const productImagePreview = document.querySelector("#productImagePreview");
-const productExtraImageOnePreview = document.querySelector("#productExtraImageOnePreview");
-const productExtraImageTwoPreview = document.querySelector("#productExtraImageTwoPreview");
-const loginForm = document.querySelector("#loginForm");
-const registerForm = document.querySelector("#registerForm");
-const registerCepInput = document.querySelector("#registerCep");
-const adminLayout = document.querySelector("#adminLayout");
-const adminLocked = document.querySelector("#adminLocked");
-const menuLogoutButton = document.querySelector("#menuLogoutButton");
-const cartCepInput = document.querySelector("#cartCep");
-const shippingMessage = document.querySelector("#shippingMessage");
-const couponMessage = document.querySelector("#couponMessage");
-const couponCodeInput = document.querySelector("#couponCode");
-const paymentMethodInput = document.querySelector("#paymentMethod");
-const paymentSimulation = document.querySelector("#paymentSimulation");
-let selectedDetailView = "photo";
 let accountOrderHistory = [];
 let adminOrderHistory = [];
+let adminOrdersLoadError = "";
+let selectedAdminOrderId = null;
+let lastOrderSnapshot = readStorage(storageKeys.pendingOrder, null);
+let favoriteIds = readStorage(storageKeys.favorites, []);
+let reviews = [];
+let eligibleReviews = [];
+let highlightedReviewId = null;
+
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
+document.body.classList.toggle("admin-portal", isAdminPortal);
 
 function readStorage(key, fallback) {
-  const value = localStorage.getItem(key);
-  return value ? JSON.parse(value) : fallback;
+  try {
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function writeStorage(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function formatCurrency(value) {
+  return Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString("pt-BR") : "-";
+}
+
+function onlyDigits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function formatCep(value) {
+  const digits = onlyDigits(value).slice(0, 8);
+  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+}
+
+function normalizeText(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function normalizeProductId(value) {
+  return String(value);
+}
+
+function escapeHtml(value) {
+  const element = document.createElement("div");
+  element.textContent = String(value || "");
+  return element.innerHTML;
+}
+
+function isFavorite(id) {
+  return favoriteIds.map(normalizeProductId).includes(normalizeProductId(id));
+}
+
+function toggleFavorite(id) {
+  const normalized = normalizeProductId(id);
+  favoriteIds = isFavorite(normalized)
+    ? favoriteIds.filter((item) => normalizeProductId(item) !== normalized)
+    : [...favoriteIds, id];
+  writeStorage(storageKeys.favorites, favoriteIds);
+  renderProducts();
+  renderFavorites();
+  if (currentProductId) updateDetailFavorite();
+}
+
+function isAdmin() {
+  return user?.role === "ADMIN" && user?.authHeader;
+}
+
+function isAuthenticated() {
+  return Boolean(user?.id && user?.authHeader);
+}
+
+function authHeader() {
+  return user?.authHeader ? { Authorization: user.authHeader } : {};
+}
+
 async function apiRequest(path, options = {}) {
-  const headers = {
-    ...(options.body ? { "Content-Type": "application/json" } : {}),
-    ...(options.authenticated && user?.authHeader ? { Authorization: user.authHeader } : {}),
-    ...options.headers,
-  };
-
-  let response;
-  try {
-    response = await fetch(`${apiBase}${path}`, {
-      ...options,
-      headers,
-    });
-  } catch {
-    throw new Error("Nao consegui conectar ao servidor. Verifique se o Spring esta rodando em http://localhost:8080.");
-  }
-
+  const response = await fetch(`${apiBase}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.authenticated ? authHeader() : {}),
+      ...(options.headers || {}),
+    },
+  });
   if (!response.ok) {
     let message = "Nao foi possivel concluir a operacao.";
     try {
-      const body = await response.json();
-      message = body.message || message;
+      message = (await response.json()).message || message;
     } catch {
-      if (response.status === 401 || response.status === 403) {
-        message = "Acesso negado. Entre com uma conta administradora.";
-      }
+      message = await response.text() || message;
     }
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
-
   if (response.status === 204) return null;
   return response.json();
+}
+
+function requestLogin(returnRoute, message = "Entre na sua conta para continuar.") {
+  if (returnRoute) sessionStorage.setItem("calorine-after-login", returnRoute);
+  sessionStorage.setItem("calorine-login-message", message);
+  location.hash = "login";
+}
+
+function requestCustomerLogin() {
+  user = null;
+  localStorage.removeItem(activeUserStorageKey);
+  accountOrderHistory = [];
+  adminOrderHistory = [];
+  renderUser();
+  requestLogin("checkout", "Entre com uma conta de cliente para finalizar o pedido.");
 }
 
 async function loadProducts({ silent = false } = {}) {
   try {
     products = await apiRequest(isAdmin() ? "/api/candles/admin" : "/api/candles", { authenticated: isAdmin() });
-    cart = cart.filter((item) => products.some((product) => normalizeProductId(product.id) === normalizeProductId(item.productId)));
-    writeStorage(storageKeys.cart, cart);
   } catch (error) {
-    if (!silent) {
-      productGrid.innerHTML = `<p class="empty-state">Nao consegui conectar com o banco agora. Exibindo vitrine local.</p>`;
-    }
+    if (!silent) $("#productGrid").innerHTML = '<p class="empty-state">Nao consegui conectar com o banco agora. Exibindo vitrine local.</p>';
   }
+}
+
+async function loadAccountOrders() {
+  if (!user?.id || !user?.authHeader) {
+    accountOrderHistory = [];
+    return;
+  }
+  try {
+    accountOrderHistory = await apiRequest(`/api/orders/customer/${user.id}`, { authenticated: true });
+    eligibleReviews = await apiRequest("/api/reviews/eligible", { authenticated: true });
+  } catch {
+    accountOrderHistory = [];
+    eligibleReviews = [];
+  }
+}
+
+async function loadAdminOrders() {
+  if (!isAdmin()) {
+    adminOrderHistory = [];
+    adminOrdersLoadError = "";
+    return false;
+  }
+  try {
+    const orders = await apiRequest("/api/orders", { authenticated: true });
+    adminOrderHistory = Array.isArray(orders) ? orders : [];
+    adminOrdersLoadError = "";
+    return true;
+  } catch (error) {
+    adminOrderHistory = [];
+    adminOrdersLoadError = error.status === 401 || error.status === 403
+      ? "Sua sessao administrativa expirou. Entre novamente para carregar os pedidos."
+      : `Nao foi possivel carregar os pedidos: ${error.message}`;
+    return false;
+  }
+}
+
+function findProduct(id) {
+  return products.find((product) => normalizeProductId(product.id) === normalizeProductId(id));
+}
+
+function optionLabel(value) {
+  return {
+    classica: "Classica",
+    presente: "Presente",
+    aconchegante: "Aconchegante",
+    relaxante: "Relaxante",
+    economico: "Economico",
+    expresso: "Expresso",
+    PIX: "Pix",
+    CREDIT_CARD: "Cartao de credito",
+    BOLETO: "Boleto",
+    PENDING_PAYMENT: "Aguardando pagamento",
+    PAID: "Pago",
+    CREATED: "Recebido",
+    PREPARING: "Preparando",
+    SHIPPED: "Enviado",
+    DELIVERED: "Entregue",
+    CANCELED: "Cancelado",
+    ADMIN: "Administrador",
+    CUSTOMER: "Cliente",
+  }[value] || value || "-";
+}
+
+function getMinimumStock(product) {
+  return Number(product.minimumStock ?? 5);
+}
+
+function getSelectedFilters() {
+  return $$(".filter-panel input:checked").reduce((filters, input) => {
+    filters[input.dataset.filter] = filters[input.dataset.filter] || [];
+    filters[input.dataset.filter].push(input.value);
+    return filters;
+  }, {});
+}
+
+function productMatchesFilters(product, filters) {
+  return Object.entries(filters).every(([key, values]) => {
+    if (key === "size") return values.includes(product.size);
+    if (key === "mood") return values.includes(product.mood);
+    if (key === "stock") return Number(product.stock) > 0;
+    return true;
+  });
+}
+
+function sortProductList(list) {
+  const sorted = [...list];
+  if ($("#sortProducts").value === "price-asc") sorted.sort((a, b) => Number(a.price) - Number(b.price));
+  if ($("#sortProducts").value === "price-desc") sorted.sort((a, b) => Number(b.price) - Number(a.price));
+  if ($("#sortProducts").value === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
+  return sorted;
+}
+
+function productImage(product) {
+  if (product.imageUrl) return `<img src="${product.imageUrl}" alt="${product.name}" />`;
+  return `<div class="product-art" data-color="${product.color || "clay"}"><span></span></div>`;
+}
+
+function renderProducts() {
+  const query = normalizeText($("#searchInput").value);
+  const filters = getSelectedFilters();
+  const list = sortProductList(products.filter((product) => {
+    if (product.active === false) return false;
+    const text = normalizeText(`${product.name} ${product.scent} ${product.description}`);
+    return text.includes(query) && productMatchesFilters(product, filters);
+  }));
+
+  $("#productGrid").innerHTML = list.length ? "" : '<p class="empty-state">Nenhuma vela encontrada.</p>';
+  list.forEach((product) => {
+    const card = document.createElement("article");
+    card.className = "product-card";
+    card.innerHTML = `
+      <button class="favorite-button ${isFavorite(product.id) ? "is-active" : ""}" data-favorite type="button" aria-label="${isFavorite(product.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}">${isFavorite(product.id) ? "♥" : "♡"}</button>
+      ${productImage(product)}
+      <div>
+        <span class="tag">${product.scent}</span>
+        <h3>${product.name}</h3>
+        <p>${product.description}</p>
+        <div class="product-meta"><span>${product.size}</span><span>${optionLabel(product.mood)}</span><span>${product.stock} disp.</span></div>
+      </div>
+      <footer><strong>${formatCurrency(product.price)}</strong><button class="product-add" type="button" ${product.stock <= 0 ? "disabled" : ""}>Adicionar</button></footer>
+    `;
+    card.addEventListener("click", (event) => {
+      if (event.target.tagName === "BUTTON") return;
+      openProduct(product.id);
+    });
+    card.querySelector("[data-favorite]").addEventListener("click", () => toggleFavorite(product.id));
+    card.querySelector(".product-add").addEventListener("click", () => addToCart(product.id));
+    $("#productGrid").append(card);
+  });
+}
+
+async function openProduct(id, { navigate = true } = {}) {
+  const product = findProduct(id);
+  if (!product) return;
+  currentProductId = product.id;
+  $("#detailName").textContent = product.name;
+  $("#detailScent").textContent = product.scent;
+  $("#detailDescription").textContent = product.description;
+  $("#detailMeta").innerHTML = `<span>${product.size}</span><span>${optionLabel(product.mood)}</span><span>${product.stock} disponiveis</span>`;
+  $("#detailPrice").textContent = formatCurrency(product.price);
+  $("#detailMedia").dataset.color = product.color || "clay";
+  $("#detailImage").src = product.imageUrl || "";
+  $("#detailImage").alt = product.imageUrl ? product.name : "";
+  $("#detailMedia").classList.toggle("has-photo", Boolean(product.imageUrl));
+  updateDetailFavorite();
+  await loadProductReviews();
+  renderRelated(product);
+  if (navigate) location.hash = "product";
+}
+
+async function loadProductReviews() {
+  if (!currentProductId) return;
+  try {
+    reviews = await apiRequest(`/api/reviews/product/${currentProductId}`);
+  } catch {
+    reviews = [];
+  }
+  renderProductReviews();
+}
+
+function renderRelated(product) {
+  const similarity = (item) =>
+    Number(item.mood === product.mood) * 3
+    + Number(item.scent === product.scent) * 2
+    + Number(item.size === product.size);
+  const related = products
+    .filter((item) => item.id !== product.id && item.active !== false)
+    .sort((left, right) => similarity(right) - similarity(left))
+    .slice(0, 3);
+  $("#relatedProducts").innerHTML = "";
+  related.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "product-card";
+    card.innerHTML = `${productImage(item)}<div><span class="tag">${item.scent}</span><h3>${item.name}</h3><p>${item.description}</p></div><footer><strong>${formatCurrency(item.price)}</strong><button class="product-add" type="button">Adicionar</button></footer>`;
+    card.addEventListener("click", () => openProduct(item.id));
+    card.querySelector("button").addEventListener("click", (event) => { event.stopPropagation(); addToCart(item.id); });
+    $("#relatedProducts").append(card);
+  });
+}
+
+function updateDetailFavorite() {
+  if (!currentProductId) return;
+  const active = isFavorite(currentProductId);
+  $("#detailFavorite").textContent = active ? "Remover dos favoritos" : "Favoritar";
+  $("#detailFavorite").classList.toggle("is-active", active);
+}
+
+function renderFavorites() {
+  const list = products.filter((product) => isFavorite(product.id) && product.active !== false);
+  $("#favoriteProducts").innerHTML = list.length ? "" : '<div class="orders-empty"><strong>Nenhuma vela favorita ainda.</strong><p>Use o coracao nos produtos para montar sua lista.</p><a class="primary-action" href="#shop">Explorar velas</a></div>';
+  list.forEach((product) => {
+    const card = document.createElement("article");
+    card.className = "product-card";
+    card.innerHTML = `<button class="favorite-button is-active" type="button" aria-label="Remover dos favoritos">♥</button>${productImage(product)}<div><span class="tag">${product.scent}</span><h3>${product.name}</h3><p>${product.description}</p></div><footer><strong>${formatCurrency(product.price)}</strong><button class="product-add" type="button">Adicionar</button></footer>`;
+    card.addEventListener("click", (event) => { if (event.target.tagName !== "BUTTON") openProduct(product.id); });
+    card.querySelector(".favorite-button").addEventListener("click", () => toggleFavorite(product.id));
+    card.querySelector(".product-add").addEventListener("click", () => addToCart(product.id));
+    $("#favoriteProducts").append(card);
+  });
+}
+
+function renderProductReviews() {
+  const productReviews = reviews.filter((review) => normalizeProductId(review.productId) === normalizeProductId(currentProductId));
+  const average = productReviews.length ? productReviews.reduce((sum, review) => sum + Number(review.rating), 0) / productReviews.length : 0;
+  const stars = (rating) => `<span class="stars" aria-label="${rating} de 5 estrelas">${[1, 2, 3, 4, 5].map((value) => `<i class="${value <= Math.round(rating) ? "filled" : ""}">★</i>`).join("")}</span>`;
+  $("#detailRatingSummary").innerHTML = productReviews.length ? `${stars(average)} <span>${average.toFixed(1)} (${productReviews.length})</span>` : `${stars(0)} <span>Sem avaliacoes</span>`;
+  $("#reviewsOverview").innerHTML = productReviews.length ? `<strong>${average.toFixed(1)}</strong><div>${stars(average)}<span>${productReviews.length} avaliacao(oes) de compra verificada</span></div>` : '<p>As primeiras avaliacoes aparecerao aqui.</p>';
+  $("#productReviews").innerHTML = productReviews.length ? productReviews.map((review) => `<article class="review-item ${Number(review.id) === Number(highlightedReviewId) ? "is-highlighted" : ""}" data-review-id="${review.id}"><div>${stars(review.rating)}<span>${escapeHtml(review.author)} - compra verificada</span></div><p>${escapeHtml(review.comment)}</p></article>`).join("") : '<p class="empty-state">Este produto ainda nao recebeu avaliacoes.</p>';
+  $("#reviewForm").hidden = true;
+  $("#reviewLocked").hidden = true;
+}
+
+async function submitReview(event) {
+  event.preventDefault();
+  if (!isAuthenticated()) return requestLogin("product", "Entre na sua conta para publicar uma avaliacao.");
+  const comment = $("#reviewComment").value.trim();
+  const rating = Number($("input[name='reviewRating']:checked")?.value || 0);
+  if (!comment || !currentProductId || !rating) return setFormMessage("#reviewMessage", "Selecione as estrelas e escreva seu comentario.", true);
+  try {
+    await apiRequest("/api/reviews", { method: "POST", authenticated: true, body: JSON.stringify({ orderId: Number($("#reviewOrderId").value), productId: Number(currentProductId), rating, comment }) });
+    $("#reviewForm").reset();
+    setFormMessage("#reviewMessage", "Avaliacao publicada. Obrigada por compartilhar sua experiencia.");
+    await loadAccountOrders();
+    await loadProductReviews();
+  } catch (error) {
+    setFormMessage("#reviewMessage", error.message, true);
+  }
+}
+
+function getCartSubtotal() {
+  return cart.reduce((sum, item) => {
+    const product = findProduct(item.productId);
+    return product ? sum + Number(product.price) * item.quantity : sum;
+  }, 0);
+}
+
+function getCouponDiscount(subtotal = getCartSubtotal()) {
+  return coupon?.discount ? subtotal * coupon.discount : 0;
+}
+
+function getShippingCost(subtotal = getCartSubtotal()) {
+  if (subtotal >= 180 || coupon?.freeShipping) return 0;
+  return shippingQuote.cost === null ? 0 : Number(shippingQuote.cost || 0);
+}
+
+function getOrderTotals() {
+  const subtotal = getCartSubtotal();
+  const discount = getCouponDiscount(subtotal);
+  const shipping = getShippingCost(subtotal);
+  return { subtotal, discount, shipping, total: Math.max(0, subtotal - discount + shipping) };
+}
+
+function renderSummaryLines(target, totals = getOrderTotals(), snapshot = null) {
+  if (!target) return;
+  const items = snapshot?.itemCount ?? cart.reduce((sum, item) => sum + item.quantity, 0);
+  const delivery = snapshot?.deliveryLabel ?? (shippingQuote.cost === null ? "A calcular" : (totals.shipping === 0 ? "Gratis" : formatCurrency(totals.shipping)));
+  target.innerHTML = `
+    <div><span>Itens</span><strong>${items}</strong></div>
+    <div><span>Subtotal</span><strong>${formatCurrency(totals.subtotal)}</strong></div>
+    ${totals.discount ? `<div><span>Desconto</span><strong>${formatCurrency(totals.discount)}</strong></div>` : ""}
+    <div><span>Entrega</span><strong>${delivery}</strong></div>
+    <hr />
+    <div><span>Total</span><strong>${formatCurrency(totals.total)}</strong></div>
+  `;
+}
+
+function renderCart() {
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  $("#cartCount").textContent = totalItems;
+  $("#drawerItems").textContent = totalItems;
+  $("#drawerTotal").textContent = formatCurrency(getOrderTotals().total);
+  $("#cartItems").innerHTML = "";
+  $("#cartPageItems").innerHTML = "";
+
+  if (!cart.length) {
+    $("#cartItems").innerHTML = '<p class="empty-state">Seu carrinho esta vazio.</p>';
+    $("#cartPageItems").innerHTML = '<p class="empty-state">Seu carrinho esta vazio.</p>';
+  }
+
+  cart.forEach((item) => {
+    const product = findProduct(item.productId);
+    if (!product) return;
+    const drawerRow = document.createElement("article");
+    drawerRow.className = "cart-item";
+    drawerRow.innerHTML = `<div><h3>${product.name}</h3><p>${item.quantity} un. x ${formatCurrency(product.price)}</p></div><div class="quantity"><button>-</button><strong>${item.quantity}</strong><button>+</button></div>`;
+    const [minus, plus] = drawerRow.querySelectorAll("button");
+    minus.addEventListener("click", () => updateCart(product.id, -1));
+    plus.addEventListener("click", () => updateCart(product.id, 1));
+    $("#cartItems").append(drawerRow);
+
+    const pageRow = document.createElement("article");
+    pageRow.className = "cart-page-row";
+    pageRow.innerHTML = `
+      <div class="cart-product-cell">${productImage(product)}<div><h3>${product.name}</h3><p>${product.scent} - ${product.size}</p><span>Em estoque</span></div></div>
+      <strong>${formatCurrency(product.price)}</strong>
+      <div class="quantity"><button>-</button><strong>${item.quantity}</strong><button>+</button></div>
+      <div class="cart-page-total"><strong>${formatCurrency(product.price * item.quantity)}</strong><button class="remove-item">Remover</button></div>
+    `;
+    const [pageMinus, pagePlus] = pageRow.querySelectorAll(".quantity button");
+    pageMinus.addEventListener("click", () => updateCart(product.id, -1));
+    pagePlus.addEventListener("click", () => updateCart(product.id, 1));
+    pageRow.querySelector(".remove-item").addEventListener("click", () => removeFromCart(product.id));
+    $("#cartPageItems").append(pageRow);
+  });
+
+  renderSummaryLines($("#checkoutFinalSummary"));
+  renderSummaryLines($("#checkoutSummary"));
+  renderCheckoutItems();
+}
+
+function addToCart(id) {
+  const product = findProduct(id);
+  if (!product || product.stock <= 0) return;
+  const item = cart.find((candidate) => normalizeProductId(candidate.productId) === normalizeProductId(id));
+  if (item) item.quantity += 1;
+  else cart.push({ productId: id, quantity: 1 });
+  writeStorage(storageKeys.cart, cart);
+  renderCart();
+  openCart();
+}
+
+function updateCart(id, amount) {
+  const item = cart.find((candidate) => normalizeProductId(candidate.productId) === normalizeProductId(id));
+  if (!item) return;
+  item.quantity += amount;
+  if (item.quantity <= 0) cart = cart.filter((candidate) => normalizeProductId(candidate.productId) !== normalizeProductId(id));
+  writeStorage(storageKeys.cart, cart);
+  renderCart();
+}
+
+function removeFromCart(id) {
+  cart = cart.filter((item) => normalizeProductId(item.productId) !== normalizeProductId(id));
+  writeStorage(storageKeys.cart, cart);
+  renderCart();
+}
+
+function openCart() {
+  $("#cartDrawer").classList.add("open");
+}
+
+function closeCart() {
+  $("#cartDrawer").classList.remove("open");
+}
+
+function openCheckoutFromDrawer() {
+  closeCart();
+  location.hash = "cart";
+}
+
+function closeOrderFromCart() {
+  if (!cart.length) return openCart();
+  if (isAdmin()) return requestCustomerLogin();
+  if (!isAuthenticated()) return requestLogin("checkout", "Entre na sua conta para finalizar o pedido.");
+  location.hash = "checkout";
+}
+
+function calculateShipping() {
+  const cep = onlyDigits($("#cartCep").value);
+  $("#cartCep").value = formatCep(cep);
+  if (cep.length !== 8) {
+    shippingQuote = { cep: "", cost: null, days: null, service: "economico" };
+    localStorage.removeItem(storageKeys.shipping);
+    $("#shippingMessage").textContent = "Digite um CEP com 8 numeros.";
+    renderCart();
+    return false;
+  }
+  const baseCost = 12.9 + (Number(cep.slice(-2)) % 7);
+  const days = 3 + (Number(cep[0]) % 4);
+  shippingQuote = { cep: formatCep(cep), cost: Number(baseCost.toFixed(2)), days, service: "economico", baseCost: Number(baseCost.toFixed(2)), baseDays: days };
+  writeStorage(storageKeys.shipping, shippingQuote);
+  const shippingValue = getShippingCost();
+  $("#shippingMessage").textContent = `Entrega estimada em ${days} dias uteis para ${shippingQuote.cep}. Frete: ${shippingValue === 0 ? "Gratis" : formatCurrency(shippingValue)}.`;
+  renderCart();
+  return true;
+}
+
+async function searchCheckoutCepAddress() {
+  const cep = onlyDigits($("#checkoutCep").value);
+  $("#checkoutCep").value = formatCep(cep);
+  if (cep.length !== 8) return false;
+  $("#checkoutShippingSummary").textContent = "Buscando endereco pelo CEP...";
+  try {
+    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const data = await response.json();
+    if (data.erro) throw new Error();
+    $("#deliveryStreet").value = data.logradouro || $("#deliveryStreet").value;
+    $("#deliveryNeighborhood").value = data.bairro || $("#deliveryNeighborhood").value;
+    $("#deliveryCity").value = data.localidade || $("#deliveryCity").value;
+    $("#deliveryState").value = data.uf || $("#deliveryState").value;
+  } catch {
+    $("#checkoutShippingSummary").textContent = "Nao encontrei esse CEP. Preencha manualmente.";
+  }
+  return true;
+}
+
+async function calculateCheckoutShipping() {
+  const cep = onlyDigits($("#checkoutCep").value);
+  if (cep.length !== 8) {
+    $("#checkoutShippingSummary").textContent = "Digite um CEP com 8 numeros.";
+    return false;
+  }
+  await searchCheckoutCepAddress();
+  $("#cartCep").value = formatCep(cep);
+  const ok = calculateShipping();
+  renderShippingOptions();
+  $("#checkoutShippingSummary").textContent = ok ? `Entrega para ${shippingQuote.cep}: ${formatCurrency(getShippingCost())}, prazo de ${shippingQuote.days} dias uteis.` : "Nao foi possivel calcular.";
+  return ok;
+}
+
+async function calculateFreightForCheckout() {
+  const accountSelected = $("input[name='deliveryChoice']:checked")?.value === "account";
+  if (accountSelected && hasCompleteAddress(user?.address)) {
+    fillDeliveryAddress(user.address);
+  }
+  const ok = await calculateCheckoutShipping();
+  if (ok) {
+    const value = getShippingCost() === 0 ? "Gratis" : formatCurrency(getShippingCost());
+    $("#checkoutShippingSummary").textContent = `Frete calculado: ${value}, ${optionLabel(shippingQuote.service)}, prazo de ${shippingQuote.days} dias uteis.`;
+  }
+  return ok;
+}
+
+function getShippingOptions() {
+  if (!shippingQuote.cep || shippingQuote.cost === null) return [];
+  const baseCost = Number(shippingQuote.baseCost ?? shippingQuote.cost);
+  const baseDays = Number(shippingQuote.baseDays ?? shippingQuote.days ?? 4);
+  return [
+    { service: "economico", label: "Economico", cost: baseCost, days: baseDays },
+    { service: "expresso", label: "Expresso", cost: Number((baseCost + 7.9).toFixed(2)), days: Math.max(1, baseDays - 2) },
+  ];
+}
+
+function renderShippingOptions() {
+  const options = getShippingOptions();
+  $("#shippingOptions").innerHTML = options.map((option) => `<label class="${shippingQuote.service === option.service ? "is-selected" : ""}"><input name="shippingService" type="radio" value="${option.service}" ${shippingQuote.service === option.service ? "checked" : ""} /><span class="shipping-option-copy"><strong>${option.label}</strong><small>${option.days} dias uteis</small></span><strong>${getCartSubtotal() >= 180 ? "Gratis" : formatCurrency(option.cost)}</strong></label>`).join("");
+  $$("#shippingOptions input").forEach((input) => input.addEventListener("change", () => selectShippingService(input.value)));
+}
+
+function selectShippingService(service) {
+  const selected = getShippingOptions().find((option) => option.service === service);
+  if (!selected) return;
+  shippingQuote = { ...shippingQuote, service: selected.service, cost: selected.cost, days: selected.days };
+  writeStorage(storageKeys.shipping, shippingQuote);
+  renderShippingOptions();
+  renderCart();
+}
+
+function applyCoupon() {
+  const code = normalizeText($("#couponCode").value).toUpperCase();
+  const coupons = {
+    CALORINE10: { code: "CALORINE10", discount: 0.1, freeShipping: false },
+    FRETEGRATIS: { code: "FRETEGRATIS", discount: 0, freeShipping: true },
+  };
+  coupon = coupons[code] || { code: "", discount: 0, freeShipping: false };
+  if (coupon.code) writeStorage(storageKeys.coupon, coupon);
+  else localStorage.removeItem(storageKeys.coupon);
+  $("#couponMessage").textContent = coupon.code ? "Cupom aplicado." : "Cupom nao encontrado ou removido.";
+  renderCart();
+}
+
+function fillDeliveryAddress(address) {
+  if (!address) return;
+  $("#checkoutCep").value = formatCep(address.cep || "");
+  $("#deliveryStreet").value = address.street || "";
+  $("#deliveryNumber").value = address.number || "";
+  $("#deliveryComplement").value = address.complement || "";
+  $("#deliveryNeighborhood").value = address.neighborhood || "";
+  $("#deliveryCity").value = address.city || "";
+  $("#deliveryState").value = address.state || "";
+}
+
+function hasCompleteAddress(address) {
+  return Boolean(address?.cep && address?.street && address?.number && address?.neighborhood && address?.city && address?.state);
+}
+
+function accountAddressText(address) {
+  if (!hasCompleteAddress(address)) return "";
+  return `${address.street}, ${address.number}${address.complement ? `, ${address.complement}` : ""}, ${address.neighborhood}, ${address.city} - ${address.state}`;
+}
+
+function renderAccountDeliverySummary(address) {
+  const target = $("#accountDeliverySummary");
+  if (!hasCompleteAddress(address)) {
+    target.innerHTML = '<p class="hint-text">Nenhum endereco completo cadastrado nesta conta.</p>';
+    return;
+  }
+  target.innerHTML = `
+    <span class="status-pill is-active">Endereco cadastrado</span>
+    <strong>${user?.name || "Cliente"}</strong>
+    <p>${accountAddressText(address)}</p>
+    <small>CEP ${formatCep(address.cep)}</small>
+  `;
+}
+
+function clearDeliveryAddressFields() {
+  ["checkoutCep", "deliveryStreet", "deliveryNumber", "deliveryComplement", "deliveryNeighborhood", "deliveryCity", "deliveryState"].forEach((id) => { $(`#${id}`).value = ""; });
+}
+
+function setDeliveryChoice(choice) {
+  const accountAddress = user?.address;
+  if (choice === "account" && hasCompleteAddress(accountAddress)) {
+    fillDeliveryAddress(accountAddress);
+    renderAccountDeliverySummary(accountAddress);
+    $("#accountDeliverySummary").hidden = false;
+    $("#otherAddressFields").hidden = true;
+    $("#cartCep").value = formatCep(accountAddress.cep);
+    if (shippingQuote.cep !== formatCep(accountAddress.cep) || shippingQuote.cost === null) calculateShipping();
+    renderShippingOptions();
+    $("#checkoutShippingSummary").textContent = `Entrega para ${formatCep(accountAddress.cep)}: ${getShippingCost() === 0 ? "Gratis" : formatCurrency(getShippingCost())}, prazo de ${shippingQuote.days} dias uteis.`;
+  } else {
+    if (choice === "account") {
+      $("input[name='deliveryChoice'][value='other']").checked = true;
+      renderAccountDeliverySummary(accountAddress);
+    }
+    $("#accountDeliverySummary").hidden = true;
+    $("#otherAddressFields").hidden = false;
+    clearDeliveryAddressFields();
+    shippingQuote = { cep: "", cost: null, days: null, service: "economico" };
+    localStorage.removeItem(storageKeys.shipping);
+    renderShippingOptions();
+    renderCart();
+    $("#checkoutShippingSummary").textContent = "Informe o novo endereco e calcule o frete.";
+  }
+}
+
+function buildDeliveryAddressText() {
+  const street = $("#deliveryStreet").value.trim();
+  const number = $("#deliveryNumber").value.trim();
+  const neighborhood = $("#deliveryNeighborhood").value.trim();
+  const city = $("#deliveryCity").value.trim();
+  const state = $("#deliveryState").value.trim().toUpperCase();
+  const complement = $("#deliveryComplement").value.trim();
+  if (!street || !number || !neighborhood || !city || !state) return "";
+  return `${street}, ${number}${complement ? `, ${complement}` : ""}, ${neighborhood}, ${city} - ${state}`;
+}
+
+function renderCheckout() {
+  $("#checkoutUserName").textContent = user?.name || "-";
+  $("#checkoutUserEmail").textContent = user?.email || "-";
+  $("#checkoutUserPhone").textContent = user?.phone || "Telefone nao informado";
+  const selectedChoice = $("input[name='deliveryChoice']:checked")?.value || "account";
+  setDeliveryChoice(selectedChoice);
+  renderPaymentSimulation();
+}
+
+function paymentToApi(value) {
+  return { pix: "PIX", card: "CREDIT_CARD", boleto: "BOLETO", whatsapp: "PIX" }[value] || "PIX";
+}
+
+function paymentFromApi(value) {
+  return { PIX: "pix", CREDIT_CARD: "card", BOLETO: "boleto" }[value] || "pix";
+}
+
+function renderPaymentSimulation() {
+  const method = $("#paymentMethod").value;
+  const total = getOrderTotals().total;
+  const messages = {
+    pix: `Pix simulado: copie a chave CALORINE-${Math.max(1, Math.round(total * 100))}.`,
+    card: "Cartao simulado: pedido aprovado automaticamente neste ambiente.",
+    boleto: "Boleto simulado: vencimento em 2 dias uteis.",
+    whatsapp: "WhatsApp: sera aberta uma mensagem pronta para atendimento.",
+  };
+  $("#paymentSimulation").textContent = messages[method] || "";
+}
+
+function renderCheckoutItems() {
+  $("#checkoutReviewItems").innerHTML = cart.map((item) => {
+    const product = findProduct(item.productId);
+    return product ? `<article class="checkout-review-item">${productImage(product)}<div><h3>${product.name}</h3><p>${item.quantity} un. x ${formatCurrency(product.price)}</p></div><strong>${formatCurrency(product.price * item.quantity)}</strong></article>` : "";
+  }).join("");
+}
+
+async function submitCheckout(event) {
+  event.preventDefault();
+  if (!cart.length) return;
+  if (isAdmin()) return requestCustomerLogin();
+  if (!isAuthenticated()) return requestLogin("checkout", "Entre novamente para finalizar o pedido.");
+  const address = buildDeliveryAddressText();
+  if (!address) {
+    $("#checkoutMessage").textContent = "Complete o endereco de entrega.";
+    return;
+  }
+  if (shippingQuote.cost === null || shippingQuote.cep !== formatCep($("#checkoutCep").value)) {
+    $("#checkoutShippingSummary").textContent = "Calcule o frete para este endereco antes de continuar.";
+    return;
+  }
+  const totals = getOrderTotals();
+  const payment = $("#paymentMethod").value;
+  try {
+    const order = await apiRequest("/api/orders", {
+      method: "POST",
+      authenticated: true,
+      body: JSON.stringify({
+        customerId: user.id,
+        deliveryAddress: address,
+        paymentMethod: paymentToApi(payment),
+        couponCode: coupon.code || "",
+        discountTotal: totals.discount,
+        shippingCep: shippingQuote.cep,
+        shippingService: shippingQuote.service,
+        shippingCost: totals.shipping,
+        shippingDays: shippingQuote.days,
+        paymentSimulation: payment,
+        items: cart.map((item) => ({ productId: Number(item.productId), quantity: item.quantity })),
+      }),
+    });
+    lastOrderSnapshot = { order, address, payment, totals, shipping: { ...shippingQuote }, items: order.items || [] };
+    writeStorage(storageKeys.pendingOrder, lastOrderSnapshot);
+    cart = [];
+    writeStorage(storageKeys.cart, cart);
+    localStorage.removeItem(storageKeys.shipping);
+    localStorage.removeItem(storageKeys.coupon);
+    shippingQuote = { cep: "", cost: null, days: null, service: "economico" };
+    coupon = { code: "", discount: 0, freeShipping: false };
+    await loadProducts({ silent: true });
+    await loadAccountOrders();
+    renderAll();
+    location.hash = "payment";
+  } catch (error) {
+    if (error.status === 401) {
+      user = null;
+      localStorage.removeItem(activeUserStorageKey);
+      return requestLogin("checkout", "Sua sessao expirou. Entre novamente para continuar o pagamento.");
+    }
+    $("#checkoutMessage").textContent = error.message;
+  }
+}
+
+function renderPaymentPage() {
+  if (!lastOrderSnapshot) return;
+  const { order, address, payment, totals, shipping, items } = lastOrderSnapshot;
+  $("#paymentOrderNumber").textContent = `CALORINE-${String(order.id).padStart(5, "0")}`;
+  $("#paymentCustomerName").textContent = user?.name || order.customerName || "Cliente";
+  $("#paymentDeliveryAddress").textContent = address;
+  $("#paymentShippingInfo").textContent = `${optionLabel(shipping.service)} - ${shipping.days || "-"} dias uteis - ${formatCurrency(totals.shipping)}`;
+  $("#paymentItems").innerHTML = items.map((item) => `<article class="payment-review-item"><div><h3>${item.productName}</h3><p>${item.quantity} un.</p></div><strong>${formatCurrency(Number(item.unitPrice || 0) * item.quantity)}</strong></article>`).join("");
+  renderSummaryLines($("#paymentSummary"), totals, {
+    itemCount: items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+    deliveryLabel: totals.shipping === 0 ? "Gratis" : formatCurrency(totals.shipping),
+  });
+  const pixCode = `CALORINE-PIX-${order.id}-${Math.round(totals.total * 100)}`;
+  $("#paymentInstructions").innerHTML = {
+    pix: `<h2>Pix a vista</h2><p>Escaneie o QR Code simulado ou copie o codigo abaixo.</p><div class="fake-qr"></div><button class="secondary-action" type="button" data-copy-pix="${pixCode}">Copiar codigo Pix</button><p class="hint-text">${pixCode}</p><button class="primary-action payment-confirm-button" type="button" data-confirm-payment>Confirmar pagamento Pix</button>`,
+    card: `<h2>Cartao de credito</h2><p>Preencha os dados de teste para simular a aprovacao.</p><form class="card-payment-form" id="cardPaymentForm"><label>Nome no cartao<input required autocomplete="cc-name" /></label><label>Numero do cartao<input required inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000" /></label><div><label>Validade<input required maxlength="5" placeholder="MM/AA" /></label><label>CVV<input required inputmode="numeric" maxlength="4" placeholder="000" /></label></div><button class="primary-action" type="submit">Pagar ${formatCurrency(totals.total)}</button></form>`,
+    boleto: `<h2>Boleto bancario</h2><p>Boleto simulado gerado com vencimento em 2 dias uteis.</p><button class="primary-action payment-confirm-button" type="button" data-confirm-payment>Simular pagamento do boleto</button>`,
+    whatsapp: `<h2>WhatsApp</h2><p>Esta forma de atendimento esta temporariamente indisponivel.</p><button class="secondary-action" type="button" disabled>Indisponivel</button>`,
+  }[payment] || "";
+  $("#paymentInstructions [data-copy-pix]")?.addEventListener("click", (event) => {
+    navigator.clipboard?.writeText(event.currentTarget.dataset.copyPix);
+    event.currentTarget.textContent = "Codigo copiado";
+  });
+  $("#paymentInstructions [data-confirm-payment]")?.addEventListener("click", confirmCurrentPayment);
+  $("#cardPaymentForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    confirmCurrentPayment();
+  });
+}
+
+async function confirmCurrentPayment() {
+  if (!lastOrderSnapshot?.order?.id) return;
+  const button = $("#paymentInstructions .primary-action");
+  if (button) button.disabled = true;
+  try {
+    const order = await apiRequest(`/api/orders/${lastOrderSnapshot.order.id}/payment/confirm`, { method: "PUT", authenticated: true });
+    lastOrderSnapshot.order = order;
+    localStorage.removeItem(storageKeys.pendingOrder);
+    await loadAccountOrders();
+    renderConfirmationPage();
+    location.hash = "confirmation";
+  } catch (error) {
+    if (button) button.disabled = false;
+    $("#paymentInstructions").insertAdjacentHTML("beforeend", `<p class="form-message error">${escapeHtml(error.message)}</p>`);
+  }
+}
+
+function renderConfirmationPage() {
+  if (!lastOrderSnapshot) return;
+  const { order, address, totals, shipping } = lastOrderSnapshot;
+  $("#confirmationOrderNumber").textContent = `CALORINE-${String(order.id).padStart(5, "0")}`;
+  $("#confirmationAddress").textContent = address;
+  $("#confirmationShipping").textContent = `${optionLabel(shipping.service)} - ${shipping.days || "-"} dias uteis`;
+  renderSummaryLines($("#confirmationSummary"), totals, { deliveryLabel: totals.shipping === 0 ? "Gratis" : formatCurrency(totals.shipping) });
+}
+
+function buildWhatsAppMessage() {
+  const lines = cart.map((item) => {
+    const product = findProduct(item.productId);
+    return product ? `${item.quantity}x ${product.name} - ${formatCurrency(product.price * item.quantity)}` : "";
+  }).filter(Boolean);
+  const totals = getOrderTotals();
+  return ["Ola, quero finalizar meu pedido na Calorine:", ...lines, `Entrega: ${totals.shipping === 0 ? "Gratis" : formatCurrency(totals.shipping)}`, `Total: ${formatCurrency(totals.total)}`, buildDeliveryAddressText() ? `Endereco: ${buildDeliveryAddressText()}` : ""].filter(Boolean).join("\n");
+}
+
+function openWhatsAppCheckout() {
+  setFormMessage("#checkoutMessage", "A finalizacao pelo WhatsApp esta temporariamente indisponivel.", true);
+}
+
+function setFormMessage(selector, text, isError = false) {
+  const element = $(selector);
+  if (!element) return;
+  element.textContent = text;
+  element.classList.toggle("error", isError);
+}
+
+function toAddressPayload(prefix) {
+  return {
+    cep: formatCep($(`#${prefix}Cep`).value) || "-",
+    street: $(`#${prefix}Street`).value.trim(),
+    number: $(`#${prefix}Number`).value.trim(),
+    neighborhood: $(`#${prefix}Neighborhood`).value.trim(),
+    complement: $(`#${prefix}Complement`).value.trim(),
+    city: $(`#${prefix}City`).value.trim(),
+    state: $(`#${prefix}State`).value.trim().toUpperCase(),
+  };
+}
+
+async function searchRegisterCep() {
+  const cep = onlyDigits($("#registerCep").value);
+  $("#registerCep").value = formatCep(cep);
+  if (!cep.length) {
+    setFormMessage("#registerCepMessage", "Se nao souber o CEP, preencha o endereco e tentaremos localiza-lo.");
+    return;
+  }
+  if (cep.length !== 8) {
+    setFormMessage("#registerCepMessage", "CEP incompleto. Voce pode corrigi-lo ou continuar sem informar o CEP.", true);
+    return;
+  }
+  try {
+    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const data = await response.json();
+    if (data.erro) {
+      setFormMessage("#registerCepMessage", "CEP nao encontrado. Confira o numero ou continue preenchendo o endereco manualmente.", true);
+      return;
+    }
+    $("#registerStreet").value = data.logradouro || "";
+    $("#registerNeighborhood").value = data.bairro || "";
+    $("#registerCity").value = data.localidade || "";
+    $("#registerState").value = data.uf || "";
+    setFormMessage("#registerCepMessage", "Endereco localizado pelo CEP.");
+  } catch {
+    setFormMessage("#registerCepMessage", "Nao foi possivel consultar o CEP agora. O cadastro pode continuar normalmente.", true);
+  }
+}
+
+async function searchCepByRegisterAddress() {
+  if (onlyDigits($("#registerCep").value).length === 8) return;
+  const street = $("#registerStreet").value.trim();
+  const city = $("#registerCity").value.trim();
+  const state = $("#registerState").value.trim().toUpperCase();
+  if (street.length < 3 || city.length < 3 || state.length !== 2) return;
+  try {
+    const url = `https://viacep.com.br/ws/${encodeURIComponent(state)}/${encodeURIComponent(city)}/${encodeURIComponent(street)}/json/`;
+    const response = await fetch(url);
+    const addresses = await response.json();
+    if (!Array.isArray(addresses) || !addresses.length) {
+      setFormMessage("#registerCepMessage", "Nao localizamos o CEP deste endereco. Voce pode concluir o cadastro sem ele.", true);
+      return;
+    }
+    const neighborhood = normalizeText($("#registerNeighborhood").value);
+    const match = addresses.find((address) => neighborhood && normalizeText(address.bairro) === neighborhood) || addresses[0];
+    $("#registerCep").value = formatCep(match.cep);
+    if (!$("#registerNeighborhood").value) $("#registerNeighborhood").value = match.bairro || "";
+    setFormMessage("#registerCepMessage", `CEP ${formatCep(match.cep)} localizado a partir do endereco.`);
+  } catch {
+    setFormMessage("#registerCepMessage", "Nao foi possivel localizar o CEP agora. O cadastro pode continuar normalmente.", true);
+  }
+}
+
+async function login(event) {
+  event.preventDefault();
+  try {
+    const returnRoute = sessionStorage.getItem("calorine-after-login") || "account";
+    const loggedUser = await apiRequest("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email: $("#loginEmail").value.trim().toLowerCase(), password: $("#loginPassword").value }),
+    });
+    if (returnRoute === "admin" && loggedUser.role !== "ADMIN") {
+      throw new Error("Esta conta nao possui acesso administrativo.");
+    }
+    user = { ...loggedUser, authHeader: `Bearer ${loggedUser.token}` };
+    writeStorage(activeUserStorageKey, user);
+    await loadProducts({ silent: true });
+    await loadAccountOrders();
+    await loadAdminOrders();
+    renderAll();
+    location.hash = returnRoute;
+    sessionStorage.removeItem("calorine-after-login");
+    sessionStorage.removeItem("calorine-login-message");
+  } catch (error) {
+    setFormMessage("#loginMessage", error.message, true);
+  }
+}
+
+function renderLoginMode() {
+  const adminMode = isAdminPortal;
+  $("#loginScreen").classList.toggle("admin-login-mode", adminMode);
+  $("#loginEyebrow").textContent = adminMode ? "administracao" : "acesso";
+  $("#loginTitle").textContent = adminMode ? "Acessar painel" : "Entrar na loja";
+  $("#loginDescription").textContent = adminMode
+    ? "Area exclusiva para gerenciar a operacao da Calorine."
+    : "Entre com sua conta para acompanhar pedidos e agilizar o checkout.";
+  $("#loginFormTitle").textContent = adminMode ? "Login administrativo" : "Acesse sua conta";
+  $("#showRegister").hidden = adminMode;
+  $("#adminLoginHint").hidden = !adminMode;
+  $("#logoutButton").hidden = !user;
+  const message = sessionStorage.getItem("calorine-login-message") || "";
+  setFormMessage("#loginMessage", message, Boolean(message));
+}
+
+function openAdminLogin() {
+  sessionStorage.setItem("calorine-after-login", "admin");
+  sessionStorage.setItem("calorine-login-message", "Use uma conta de administradora para continuar.");
+  location.hash = "login";
+}
+
+async function register(event) {
+  event.preventDefault();
+  try {
+    const registered = await apiRequest("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name: $("#registerName").value.trim(),
+        phone: $("#registerPhone").value.trim(),
+        email: $("#registerEmail").value.trim().toLowerCase(),
+        password: $("#registerPassword").value,
+        acceptsMarketing: $("#registerMarketing").checked,
+        address: toAddressPayload("register"),
+      }),
+    });
+    user = { ...registered, authHeader: `Bearer ${registered.token}` };
+    writeStorage(activeUserStorageKey, user);
+    await loadProducts({ silent: true });
+    await loadAccountOrders();
+    renderAll();
+    location.hash = "account";
+  } catch (error) {
+    setFormMessage("#registerMessage", error.message, true);
+  }
+}
+
+function populateProfileForm() {
+  if (!user) return;
+  const address = user.address || {};
+  $("#profileName").value = user.name || "";
+  $("#profilePhone").value = user.phone || "";
+  $("#profileCep").value = address.cep === "-" ? "" : (address.cep || "");
+  $("#profileStreet").value = address.street || "";
+  $("#profileNumber").value = address.number || "";
+  $("#profileNeighborhood").value = address.neighborhood || "";
+  $("#profileComplement").value = address.complement || "";
+  $("#profileCity").value = address.city || "";
+  $("#profileState").value = address.state || "";
+  $("#profileMarketing").checked = Boolean(user.acceptsMarketing);
+}
+
+async function updateProfile(event) {
+  event.preventDefault();
+  try {
+    const updated = await apiRequest("/api/auth/me", {
+      method: "PUT",
+      authenticated: true,
+      body: JSON.stringify({
+        name: $("#profileName").value.trim(),
+        phone: $("#profilePhone").value.trim(),
+        acceptsMarketing: $("#profileMarketing").checked,
+        address: {
+          cep: formatCep($("#profileCep").value) || "-",
+          street: $("#profileStreet").value.trim(),
+          number: $("#profileNumber").value.trim(),
+          neighborhood: $("#profileNeighborhood").value.trim(),
+          complement: $("#profileComplement").value.trim(),
+          city: $("#profileCity").value.trim(),
+          state: $("#profileState").value.trim().toUpperCase(),
+        },
+      }),
+    });
+    user = { ...updated, authHeader: `Bearer ${updated.token}` };
+    writeStorage(activeUserStorageKey, user);
+    renderUser();
+    setFormMessage("#profileMessage", "Dados atualizados com sucesso.");
+  } catch (error) {
+    setFormMessage("#profileMessage", error.message, true);
+  }
+}
+
+async function changePassword(event) {
+  event.preventDefault();
+  if ($("#newPassword").value !== $("#confirmPassword").value) {
+    return setFormMessage("#passwordMessage", "A confirmacao da nova senha nao confere.", true);
+  }
+  try {
+    await apiRequest("/api/auth/password", { method: "PUT", authenticated: true, body: JSON.stringify({ currentPassword: $("#currentPassword").value, newPassword: $("#newPassword").value }) });
+    $("#passwordForm").reset();
+    setFormMessage("#passwordMessage", "Senha alterada com sucesso.");
+  } catch (error) {
+    setFormMessage("#passwordMessage", error.message, true);
+  }
+}
+
+function logout() {
+  user = null;
+  localStorage.removeItem(activeUserStorageKey);
+  accountOrderHistory = [];
+  adminOrderHistory = [];
+  selectedAdminOrderId = null;
+  sessionStorage.removeItem("calorine-after-login");
+  sessionStorage.removeItem("calorine-login-message");
+  $("#loginForm").reset();
+  renderAll();
+  if (isAdminPortal) {
+    sessionStorage.setItem("calorine-after-login", "admin");
+    location.hash = "login";
+  } else {
+    location.hash = "login";
+  }
+}
+
+function renderUser() {
+  const adminProfile = user?.role === "ADMIN";
+  $("#loginLink").textContent = isAdminPortal ? (user ? "Painel admin" : "Entrar") : (user ? "Minha conta" : "Conta");
+  $("#loginLink").href = isAdminPortal ? (user ? "#admin" : "#login") : (user ? "#account" : "#login");
+  const firstNameRaw = String(user?.name || "").trim().split(/\s+/)[0];
+  const firstName = firstNameRaw ? `${firstNameRaw.charAt(0).toUpperCase()}${firstNameRaw.slice(1).toLowerCase()}` : "";
+  $("#accountGreeting").textContent = adminProfile ? "Conta administrativa" : (firstName ? `Ola, ${firstName}` : "Ola");
+  $("#accountName").textContent = user?.name || "-";
+  $("#accountEmail").textContent = user?.email || "-";
+  $("#accountPhone").textContent = user?.phone || "-";
+  $("#accountRole").textContent = optionLabel(user?.role);
+  const accountAddress = user?.address || {};
+  $("#accountCep").textContent = accountAddress.cep || "-";
+  $("#accountStreet").textContent = accountAddress.street || "-";
+  $("#accountNumber").textContent = accountAddress.number || "-";
+  $("#accountNeighborhood").textContent = accountAddress.neighborhood || "-";
+  $("#accountComplement").textContent = accountAddress.complement || "-";
+  $("#accountCityState").textContent = accountAddress.city
+    ? `${accountAddress.city}${accountAddress.state ? ` - ${accountAddress.state}` : ""}`
+    : "-";
+  $("#accountScreen").classList.toggle("is-admin-profile", adminProfile);
+  $("#accountPhoneCard").hidden = adminProfile;
+  $("#accountAddressCard").hidden = adminProfile;
+  $("#accountHeroDescription").textContent = adminProfile
+    ? "Acesse o painel para gerenciar pedidos, produtos e clientes."
+    : "Confira e mantenha seus dados pessoais organizados.";
+  $("#accountAdminButton").style.display = isAdmin() ? "inline-flex" : "none";
+  $("#accountDropdown").hidden = !user;
+  $("#accountDataLink").hidden = adminProfile;
+  $("#ordersLink").hidden = adminProfile;
+  renderAccountOrders();
+  updateAdminAccess();
+}
+
+function renderAccountOrders() {
+  renderReviewNotifications();
+  $("#accountOrders").innerHTML = accountOrderHistory.length ? "" : '<div class="orders-empty"><strong>Voce ainda nao fez nenhum pedido.</strong><p>Quando sua primeira compra for concluida, ela aparecera aqui.</p><a class="primary-action" href="#shop">Conhecer as velas</a></div>';
+  accountOrderHistory.forEach((order) => {
+    const pendingReviews = (order.items || [])
+      .map((orderItem) => getOrderItemReviewEligibility(order, orderItem))
+      .filter(Boolean);
+    const nextReview = pendingReviews[0];
+    const item = document.createElement("article");
+    item.className = "customer-order-card";
+    item.innerHTML = `<div><p class="eyebrow">pedido #${order.id}</p><h3>${formatDate(order.createdAt)}</h3><span>${(order.items || []).length} produto(s)</span></div><div><span class="status-pill">${optionLabel(order.status)}</span><strong>${formatCurrency(order.total)}</strong>${nextReview ? `<button class="review-order-button" data-review-product="${nextReview.productId}" data-review-order="${nextReview.orderId}" type="button">Avaliar produto${pendingReviews.length > 1 ? ` (${pendingReviews.length})` : ""}</button>` : ""}<button class="small-button" data-order-details type="button">Detalhes</button></div>`;
+    item.querySelector("[data-order-details]").addEventListener("click", () => renderCustomerOrderDetail(order));
+    item.querySelector("[data-review-product]")?.addEventListener("click", (event) => startProductReview(event.currentTarget.dataset.reviewProduct, event.currentTarget.dataset.reviewOrder));
+    $("#accountOrders").append(item);
+  });
+}
+
+function getReviewEligibility(orderId, productId) {
+  return eligibleReviews.find((item) => Number(item.orderId) === Number(orderId) && Number(item.productId) === Number(productId));
+}
+
+function getOrderItemReviewEligibility(order, orderItem) {
+  const eligibility = getReviewEligibility(order.id, orderItem.productId);
+  if (eligibility) return eligibility;
+  if (order.status === "DELIVERED" && orderItem.reviewEligible !== false) {
+    return { orderId: order.id, productId: orderItem.productId, productName: orderItem.productName };
+  }
+  return null;
+}
+
+function renderReviewNotifications() {
+  const target = $("#reviewNotifications");
+  target.innerHTML = eligibleReviews.length ? eligibleReviews.map((item) => `<article><div><span class="notification-mark">★</span><p><strong>Como foi sua experiencia com ${escapeHtml(item.productName)}?</strong><small>O pedido foi entregue e sua avaliacao ja esta disponivel.</small></p></div><button class="secondary-action" data-review-product="${item.productId}" data-review-order="${item.orderId}" type="button">Avaliar produto</button></article>`).join("") : "";
+  target.querySelectorAll("[data-review-product]").forEach((button) => button.addEventListener("click", () => startProductReview(button.dataset.reviewProduct, button.dataset.reviewOrder)));
+}
+
+async function startProductReview(productId, orderId) {
+  await openProduct(productId, { navigate: false });
+  const product = findProduct(productId);
+  $("#reviewPageOrderId").value = orderId;
+  $("#reviewPageProductName").textContent = product?.name || "Vela Calorine";
+  $("#reviewPageOrderReference").textContent = `Pedido #${orderId} - compra entregue`;
+  $("#reviewPageProductImage").src = product?.imageUrl || "";
+  $("#reviewPageProductImage").alt = product?.imageUrl ? product.name : "";
+  $("#reviewPageProductImage").classList.toggle("has-image", Boolean(product?.imageUrl));
+  $("#reviewPageForm").reset();
+  $("#reviewPageOrderId").value = orderId;
+  setFormMessage("#reviewPageMessage", "");
+  location.hash = "review";
+}
+
+async function submitReviewPage(event) {
+  event.preventDefault();
+  if (!isAuthenticated()) return requestLogin("orders", "Entre na sua conta para publicar uma avaliacao.");
+  const comment = $("#reviewPageComment").value.trim();
+  const rating = Number($("input[name='reviewPageRating']:checked")?.value || 0);
+  const orderId = Number($("#reviewPageOrderId").value);
+  if (!comment || !currentProductId || !rating || !orderId) return setFormMessage("#reviewPageMessage", "Selecione as estrelas e escreva seu comentario.", true);
+  try {
+    const createdReview = await apiRequest("/api/reviews", { method: "POST", authenticated: true, body: JSON.stringify({ orderId, productId: Number(currentProductId), rating, comment }) });
+    highlightedReviewId = createdReview.id;
+    await loadAccountOrders();
+    await loadProductReviews();
+    location.hash = "product";
+    setTimeout(() => {
+      $("#reviewsSection").scrollIntoView({ behavior: "smooth", block: "start" });
+      $(`[data-review-id='${highlightedReviewId}']`)?.focus({ preventScroll: true });
+    }, 80);
+  } catch (error) {
+    setFormMessage("#reviewPageMessage", error.message, true);
+  }
+}
+
+function renderCustomerOrderDetail(order) {
+  const target = $("#customerOrderDetail");
+  target.hidden = false;
+  target.innerHTML = `<div class="customer-detail-head"><div><p class="eyebrow">pedido #${order.id}</p><h2>${optionLabel(order.status)}</h2></div><button class="icon-button" data-close-detail type="button" aria-label="Fechar">×</button></div>${order.status === "PENDING_PAYMENT" ? '<div class="order-payment-pending"><span>O pedido ainda aguarda pagamento.</span><button class="primary-action" data-pay-order type="button">Pagar agora</button></div>' : ""}${order.reviewNotification ? `<div class="order-review-notice">${escapeHtml(order.reviewNotification)}</div>` : ""}<div class="order-progress">${["PENDING_PAYMENT", "PAID", "PREPARING", "SHIPPED", "DELIVERED"].map((status) => `<span class="${status === order.status ? "is-current" : ""}">${optionLabel(status)}</span>`).join("")}</div><div class="customer-detail-grid"><article><span>Entrega</span><strong>${escapeHtml(order.deliveryAddress)}</strong><p>${optionLabel(order.shippingService)} - ${order.shippingDays || "-"} dias</p></article><article><span>Pagamento</span><strong>${optionLabel(order.paymentMethod)}</strong><p>${formatCurrency(order.total)}</p></article></div><div class="admin-detail-items customer-order-items"><h4>Itens</h4>${(order.items || []).map((item) => `<div><span>${item.quantity}x ${escapeHtml(item.productName)}</span><span><strong>${formatCurrency(item.quantity * Number(item.unitPrice || 0))}</strong>${getOrderItemReviewEligibility(order, item) ? `<button class="small-button" data-review-product="${item.productId}" data-review-order="${order.id}" type="button">Avaliar produto</button>` : ""}</span></div>`).join("")}</div>`;
+  target.querySelector("[data-close-detail]").addEventListener("click", () => { target.hidden = true; });
+  target.querySelector("[data-pay-order]")?.addEventListener("click", () => resumeOrderPayment(order));
+  target.querySelectorAll("[data-review-product]").forEach((button) => button.addEventListener("click", () => startProductReview(button.dataset.reviewProduct, button.dataset.reviewOrder)));
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function resumeOrderPayment(order) {
+  const subtotal = (order.items || []).reduce((sum, item) => sum + Number(item.unitPrice || 0) * Number(item.quantity || 0), 0);
+  const discount = Number(order.discountTotal || 0);
+  const shipping = Number(order.shippingCost || 0);
+  lastOrderSnapshot = {
+    order,
+    address: order.deliveryAddress,
+    payment: paymentFromApi(order.paymentMethod),
+    totals: { subtotal, discount, shipping, total: Number(order.total || 0) },
+    shipping: { cep: order.shippingCep, service: order.shippingService, cost: shipping, days: order.shippingDays },
+    items: order.items || [],
+  };
+  writeStorage(storageKeys.pendingOrder, lastOrderSnapshot);
+  location.hash = "payment";
+}
+
+function renderAdminDashboard() {
+  const orders = getCommerceAdminOrders();
+  const sales = orders.filter((order) => !["PENDING_PAYMENT", "CREATED", "CANCELED"].includes(order.status)).reduce((sum, order) => sum + Number(order.total || 0), 0);
+  $("#adminTotalOrders").textContent = orders.length;
+  $("#adminTotalSales").textContent = formatCurrency(sales);
+  $("#adminActiveProducts").textContent = products.filter((product) => product.active !== false).length;
+  $("#adminLowStock").textContent = products.filter((product) => product.active !== false && Number(product.stock) <= getMinimumStock(product)).length;
+  renderAdminSalesChart(orders);
+  $("#adminDashboardMessage").textContent = adminOrdersLoadError;
+  $("#adminDashboardMessage").hidden = !adminOrdersLoadError;
+}
+
+function renderAdminSalesChart(orders) {
+  const statuses = ["PENDING_PAYMENT", "PAID", "CREATED", "PREPARING", "SHIPPED", "DELIVERED", "CANCELED"];
+  const maximum = Math.max(1, ...statuses.map((status) => orders.filter((order) => order.status === status).length));
+  $("#adminSalesChart").innerHTML = statuses.map((status) => { const count = orders.filter((order) => order.status === status).length; return `<div><span>${optionLabel(status)}</span><i style="--bar:${Math.round((count / maximum) * 100)}%"></i><strong>${count}</strong></div>`; }).join("");
+}
+
+function exportOrdersCsv() {
+  const rows = [["Pedido", "Data", "Cliente", "E-mail", "Status", "Pagamento", "Total"], ...getFilteredAdminOrders().map((order) => [order.id, formatDate(order.createdAt), order.customerName, order.customerEmail, optionLabel(order.status), optionLabel(order.paymentMethod), Number(order.total || 0).toFixed(2)])];
+  const csv = rows.map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(";")).join("\n");
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+  link.download = `pedidos-calorine-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function getCommerceAdminOrders() {
+  const adminEmail = user?.role === "ADMIN" ? normalizeText(user.email) : "";
+  return adminOrderHistory.filter((order) => !adminEmail || normalizeText(order.customerEmail) !== adminEmail);
+}
+
+function renderAdminStockAlerts() {
+  const low = products.filter((product) => product.active !== false && Number(product.stock) <= getMinimumStock(product)).slice(0, 4);
+  $("#adminStockAlerts").innerHTML = low.length ? low.map((product) => `<article class="admin-item"><div><h3>${product.name}</h3><p>${product.stock} em estoque - minimo ${getMinimumStock(product)}</p></div><span class="status-pill is-muted">Repor</span></article>`).join("") : '<p class="empty-state">Nenhum produto com estoque baixo.</p>';
+}
+
+function getFilteredAdminOrders() {
+  const query = normalizeText($("#adminOrderSearch")?.value || "");
+  const status = $("#adminOrderStatusFilter")?.value || "ALL";
+  return getCommerceAdminOrders().filter((order) => {
+    const text = normalizeText([order.id, order.customerName, order.customerEmail, order.customerPhone, order.deliveryAddress, ...(order.items || []).map((item) => item.productName)].join(" "));
+    return (status === "ALL" || order.status === status) && (!query || text.includes(query));
+  });
+}
+
+function renderAdminOrders() {
+  renderAdminDashboard();
+  const orders = getFilteredAdminOrders();
+  if (adminOrdersLoadError) {
+    $("#adminOrders").innerHTML = `<div class="admin-load-error"><strong>Pedidos indisponiveis</strong><p>${escapeHtml(adminOrdersLoadError)}</p><button class="small-button" data-reload-admin-orders type="button">Tentar novamente</button></div>`;
+    $("#adminOrders [data-reload-admin-orders]").addEventListener("click", refreshAdminOrders);
+    renderAdminOrderDetail(null);
+    $("#adminRecentOrders").innerHTML = `<p class="admin-load-error">${escapeHtml(adminOrdersLoadError)}</p>`;
+    return;
+  }
+  if (!orders.length) {
+    $("#adminOrders").innerHTML = '<p class="empty-state">Nenhum pedido encontrado.</p>';
+    renderAdminOrderDetail(null);
+  } else {
+    if (!selectedAdminOrderId || !orders.some((order) => order.id === selectedAdminOrderId)) selectedAdminOrderId = orders[0].id;
+    $("#adminOrders").innerHTML = "";
+    orders.forEach((order) => {
+      const item = document.createElement("article");
+      item.className = `admin-order-card ${order.id === selectedAdminOrderId ? "is-selected" : ""}`;
+      item.innerHTML = `<div><h3>Pedido #${order.id} - ${order.customerName}</h3><p>${formatDate(order.createdAt)} - ${optionLabel(order.paymentMethod)} - ${formatCurrency(order.total)}</p><p>${order.customerEmail || ""}</p></div><div class="admin-actions"><span class="status-pill">${optionLabel(order.status)}</span><button class="small-button" type="button">Detalhes</button></div>`;
+      item.querySelector("button").addEventListener("click", () => { selectedAdminOrderId = order.id; renderAdminOrders(); });
+      $("#adminOrders").append(item);
+    });
+    renderAdminOrderDetail(orders.find((order) => order.id === selectedAdminOrderId));
+  }
+  $("#adminRecentOrders").innerHTML = getCommerceAdminOrders().slice(0, 4).map((order) => `<article class="admin-order-card"><div><h3>Pedido #${order.id}</h3><p>${order.customerName} - ${formatCurrency(order.total)}</p></div><span class="status-pill">${optionLabel(order.status)}</span></article>`).join("") || '<p class="empty-state">Nenhum pedido recebido ainda.</p>';
+}
+
+function renderAdminOrderDetail(order) {
+  if (!order) {
+    $("#adminOrderDetail").innerHTML = '<p class="empty-state">Selecione um pedido.</p>';
+    return;
+  }
+  const subtotal = (order.items || []).reduce((sum, item) => sum + Number(item.unitPrice || 0) * item.quantity, 0);
+  $("#adminOrderDetail").innerHTML = `
+    <div class="admin-detail-head"><div><p class="eyebrow">pedido #${order.id}</p><h3>${order.customerName}</h3><p>${formatDate(order.createdAt)}</p></div><label>Status<select data-order-status="${order.id}">${["PENDING_PAYMENT", "PAID", "CREATED", "PREPARING", "SHIPPED", "DELIVERED", "CANCELED"].map((status) => `<option value="${status}" ${order.status === status ? "selected" : ""}>${optionLabel(status)}</option>`).join("")}</select></label></div>
+    <div class="admin-detail-grid">
+      <article><span>Cliente</span><strong>${order.customerEmail || "-"}</strong><p>${order.customerPhone || "-"}</p></article>
+      <article><span>Pagamento</span><strong>${optionLabel(order.paymentMethod)}</strong><p>${order.paymentSimulation || "Simulado"}</p></article>
+      <article><span>Entrega</span><strong>${order.shippingCep || "-"}</strong><p>${order.deliveryAddress || "-"}</p><p>${optionLabel(order.shippingService)} - ${order.shippingDays || "-"} dias - ${formatCurrency(order.shippingCost)}</p></article>
+      <article><span>Resumo</span><strong>${formatCurrency(order.total)}</strong><p>Subtotal ${formatCurrency(subtotal)}</p></article>
+    </div>
+    <div class="admin-detail-items"><h4>Itens</h4>${(order.items || []).map((item) => `<div><span>${item.quantity}x ${item.productName}</span><strong>${formatCurrency(item.quantity * Number(item.unitPrice || 0))}</strong></div>`).join("")}</div>
+    <p class="hint-text">${order.emailNotification || ""}</p>
+  `;
+  $("#adminOrderDetail select").addEventListener("change", (event) => updateOrderStatus(order.id, event.target.value));
+}
+
+function renderAdminCustomers() {
+  const customers = new Map();
+  getCommerceAdminOrders().forEach((order) => {
+    const key = order.customerEmail || order.customerName;
+    const current = customers.get(key) || { name: order.customerName, email: order.customerEmail, orders: 0, total: 0 };
+    current.orders += 1;
+    current.total += order.status === "CANCELED" ? 0 : Number(order.total || 0);
+    customers.set(key, current);
+  });
+  $("#adminCustomers").innerHTML = [...customers.values()].map((customer) => `<article class="admin-item"><div><h3>${customer.name}</h3><p>${customer.email || "E-mail nao informado"}</p><p>${customer.orders} pedido(s)</p></div><strong>${formatCurrency(customer.total)}</strong></article>`).join("") || '<p class="empty-state">Nenhum cliente com pedido ainda.</p>';
+}
+
+function renderAdminList() {
+  $("#adminList").innerHTML = products.map((product) => `
+    <article class="admin-item">
+      <div><h3>${product.name}</h3><p>${product.scent} - ${product.size} - ${formatCurrency(product.price)} - ${product.stock} em estoque</p><p>Estoque minimo: ${getMinimumStock(product)}</p><span class="status-pill ${product.active ? "is-active" : "is-muted"}">${product.active ? "Ativa" : "Oculta"}</span></div>
+      <div class="admin-actions"><button class="small-button" data-edit="${product.id}">Editar</button><button class="small-button" data-toggle="${product.id}">${product.active ? "Desativar" : "Ativar"}</button></div>
+    </article>`).join("") || '<p class="empty-state">Cadastre a primeira vela.</p>';
+  $$("[data-edit]").forEach((button) => button.addEventListener("click", () => editProduct(button.dataset.edit)));
+  $$("[data-toggle]").forEach((button) => {
+    const product = findProduct(button.dataset.toggle);
+    button.addEventListener("click", () => toggleProductActive(product.id, !product.active));
+  });
+  renderAdminStockAlerts();
+}
+
+function updateAdminAccess() {
+  const locked = !isAdmin();
+  $("#adminLayout").classList.toggle("locked", locked);
+  $("#adminLocked").classList.toggle("visible", locked);
+  $("#adminScreen").classList.toggle("is-locked", locked);
+}
+
+async function switchAdminSection(section) {
+  $$(".admin-view").forEach((view) => view.classList.toggle("active", view.dataset.adminView === section));
+  if ((section === "overview" || section === "orders") && isAdmin()) {
+    if (section === "orders") $("#adminOrderStatusFilter").value = "ALL";
+    await refreshAdminOrders();
+  }
+}
+
+async function refreshAdminOrders() {
+  $("#adminOrders").innerHTML = '<p class="empty-state">Carregando pedidos...</p>';
+  await loadAdminOrders();
+  renderAdminOrders();
+  renderAdminCustomers();
 }
 
 function fileToDataUrl(file) {
@@ -180,1588 +1365,111 @@ function fileToDataUrl(file) {
   });
 }
 
-async function getProductImageFromForm() {
-  const file = productImageInput.files[0];
-  if (!file) return document.querySelector("#productImageCurrent").value || null;
-  if (!file.type.startsWith("image/")) throw new Error("Selecione um arquivo de imagem valido.");
+async function getImage(input, currentSelector) {
+  const file = input.files[0];
+  if (!file) return $(currentSelector).value || null;
+  if (!file.type.startsWith("image/")) throw new Error("Selecione uma imagem valida.");
   if (file.size > 2 * 1024 * 1024) throw new Error("Escolha uma imagem com ate 2 MB.");
   return fileToDataUrl(file);
 }
 
-async function getOptionalProductImage(input, currentSelector) {
-  const file = input.files[0];
-  if (!file) return document.querySelector(currentSelector).value || null;
-  if (!file.type.startsWith("image/")) throw new Error("Selecione arquivos de imagem validos.");
-  if (file.size > 2 * 1024 * 1024) throw new Error("Escolha imagens com ate 2 MB.");
-  return fileToDataUrl(file);
+function previewImage(target, url, text = "Sem imagem") {
+  target.innerHTML = url ? `<img src="${url}" alt="Previa" />` : text;
 }
 
-function renderImagePreview(imageUrl) {
-  productImagePreview.innerHTML = imageUrl ? `<img src="${imageUrl}" alt="Previa da vela" />` : "Sem imagem selecionada";
-}
-
-function renderExtraImagePreviews(firstImage, secondImage) {
-  productExtraImageOnePreview.innerHTML = firstImage ? `<img src="${firstImage}" alt="Previa extra 1" />` : "Sem imagem extra";
-  productExtraImageTwoPreview.innerHTML = secondImage ? `<img src="${secondImage}" alt="Previa extra 2" />` : "Sem imagem extra";
-}
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-}
-
-function formatDate(value) {
-  if (!value) return "-";
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function paymentToApi(value) {
-  return {
-    pix: "PIX",
-    card: "CREDIT_CARD",
-    whatsapp: "PIX",
-    boleto: "BOLETO",
-  }[value] || "PIX";
-}
-
-function paymentLabel(value) {
-  return {
-    PIX: "Pix",
-    CREDIT_CARD: "Cartao de credito",
-    BOLETO: "Boleto",
-  }[value] || value;
-}
-
-function statusLabel(value) {
-  return {
-    CREATED: "Recebido",
-    PREPARING: "Preparando",
-    SHIPPED: "Enviado",
-    DELIVERED: "Entregue",
-    PAID: "Pago",
-    CANCELED: "Cancelado",
-  }[value] || value;
-}
-
-function optionLabel(value) {
-  return {
-    classica: "Classica",
-    presente: "Presente",
-    aconchegante: "Aconchegante",
-    relaxante: "Relaxante",
-  }[value] || value || "-";
-}
-
-function normalizeText(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function getSelectedFilters() {
-  return [...document.querySelectorAll(".filter-panel input[type='checkbox']:checked")].reduce((selected, input) => {
-    const group = input.dataset.filter;
-    if (!selected[group]) selected[group] = [];
-    selected[group].push(input.value);
-    return selected;
-  }, {});
-}
-
-function getProductFacets(product) {
-  const searchable = normalizeText(`${product.name} ${product.scent} ${product.description}`);
-  const size = getProductSize(product);
-  const occasion = product.occasion || (searchable.includes("presente") ? "presente" : "classica");
-  const mood = product.mood || (/(lavanda|alecrim|algodao|sal|cedro|fresca|limpa|leveza)/.test(searchable) ? "relaxante" : "aconchegante");
-
-  return {
-    scent: searchable,
-    size: normalizeText(size),
-    occasion: normalizeText(occasion),
-    mood: normalizeText(mood),
-    price: Number(product.price),
-    stock: Number(product.stock),
-  };
-}
-
-function getProductSize(product) {
-  return product.size || (Number(product.price) >= 55 ? "250g" : "120g");
-}
-
-function productMatchesFilters(product, selectedFilters) {
-  const facets = getProductFacets(product);
-  return Object.entries(selectedFilters).every(([group, values]) => {
-    if (!values.length) return true;
-    if (group === "price") {
-      return values.some((value) => {
-        if (value === "ate-55") return facets.price <= 55;
-        if (value === "55-65") return facets.price > 55 && facets.price <= 65;
-        if (value === "acima-65") return facets.price > 65;
-        return true;
-      });
-    }
-    if (group === "stock") {
-      return values.some((value) => {
-        if (value === "available") return facets.stock > 0;
-        if (value === "low") return facets.stock > 0 && facets.stock <= 5;
-        return true;
-      });
-    }
-    const facet = facets[group] || "";
-    return values.some((value) => facet.includes(normalizeText(value)));
-  });
-}
-
-function sortProductList(productList) {
-  const sortedProducts = [...productList];
-  const sortMode = sortProducts.value;
-
-  if (sortMode === "price-asc") {
-    sortedProducts.sort((first, second) => Number(first.price) - Number(second.price));
-  }
-  if (sortMode === "price-desc") {
-    sortedProducts.sort((first, second) => Number(second.price) - Number(first.price));
-  }
-  if (sortMode === "newest") {
-    sortedProducts.reverse();
-  }
-
-  return sortedProducts;
-}
-
-function normalizeProductId(value) {
-  return String(value);
-}
-
-function findProduct(productIdValue) {
-  const normalizedValue = normalizeProductId(productIdValue);
-  return products.find((product) => normalizeProductId(product.id) === normalizedValue || `product-${normalizeProductId(product.id)}` === normalizedValue);
-}
-
-function isFavoriteProduct(productIdValue) {
-  return favoriteIds.map(normalizeProductId).includes(normalizeProductId(productIdValue));
-}
-
-function setRoute(route) {
-  const routeName = route || "shop";
-  const productRoute = routeName.startsWith("product-");
-  const targetRoute = productRoute ? "product" : routeName;
-
-  if (productRoute) {
-    currentProductId = routeName.replace("product-", "");
-    renderProductDetail();
-    if (!currentProductId) return;
-  }
-
-  if (targetRoute === "account" && !user) {
-    setFormMessage("#loginMessage", "Entre na sua conta para acessar essa area.", true);
-    location.hash = "login";
-    return;
-  }
-
-  if (targetRoute === "admin" && !isAdmin()) {
-    setFormMessage("#loginMessage", "Entre com uma conta administradora para cadastrar velas.", true);
-    location.hash = "login";
-    return;
-  }
-
-  document.querySelectorAll(".screen").forEach((screen) => {
-    screen.classList.toggle("active", screen.dataset.screen === targetRoute);
-  });
-  document.querySelectorAll("[data-route]").forEach((link) => {
-    link.classList.toggle("active", link.dataset.route === targetRoute);
-  });
-  updateAdminAccess();
-  if (targetRoute === "account") loadAccountOrders();
-  if (targetRoute === "admin") {
-    loadProducts({ silent: true }).then(() => {
-      renderProducts();
-      renderAdminList();
-    });
-    loadAdminOrders();
-  }
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function openProduct(id) {
-  selectedDetailView = "photo";
-  location.hash = `product-${normalizeProductId(id)}`;
-}
-
-function renderProductDetail() {
-  const product = findProduct(currentProductId);
-  if (!product) {
-    currentProductId = null;
-    location.hash = "shop";
-    return;
-  }
-
-  const image = document.querySelector("#detailImage");
-  const media = document.querySelector("#detailMedia");
-  media.dataset.color = product.color || "";
-  media.classList.toggle("has-photo", Boolean(product.imageUrl));
-  image.src = product.imageUrl || "";
-  image.alt = product.imageUrl ? product.name : "";
-  document.querySelector("#detailBreadcrumb").textContent = product.name;
-  document.querySelector("#detailScent").textContent = product.scent;
-  document.querySelector("#detailName").textContent = product.name;
-  document.querySelector("#detailDescription").textContent = product.description;
-  document.querySelector("#detailAroma").textContent = product.scent;
-  document.querySelector("#detailSize").textContent = getProductSize(product);
-  document.querySelector("#detailStock").textContent = product.stock > 0 ? `${product.stock} em estoque` : "Esgotada";
-  document.querySelector("#detailOccasion").textContent = optionLabel(product.occasion);
-  document.querySelector("#detailMood").textContent = optionLabel(product.mood);
-  document.querySelector("#detailPrice").textContent = formatCurrency(product.price);
-
-  const favoriteButton = document.querySelector("#detailFavorite");
-  const isFavorite = isFavoriteProduct(product.id);
-  favoriteButton.classList.toggle("is-active", isFavorite);
-  favoriteButton.setAttribute("aria-label", isFavorite ? `Remover ${product.name} dos favoritos` : `Adicionar ${product.name} aos favoritos`);
-
-  const addButton = document.querySelector("#detailAddToCart");
-  addButton.textContent = product.stock > 0 ? "Adicionar ao carrinho" : "Produto esgotado";
-  addButton.disabled = product.stock <= 0;
-  renderDetailThumbs(product);
-  renderRelatedProducts(product);
-  renderReviews(product.id);
-}
-
-function renderReviews(productId) {
-  const normalizedId = normalizeProductId(productId);
-  const productReviews = reviews[normalizedId] || [];
-  const summary = document.querySelector("#reviewSummary");
-  const list = document.querySelector("#reviewList");
-
-  if (!productReviews.length) {
-    summary.textContent = "Sem avaliacoes ainda";
-    list.innerHTML = '<p class="hint-text">Seja a primeira pessoa a avaliar esta vela.</p>';
-    return;
-  }
-
-  const average = productReviews.reduce((sum, review) => sum + Number(review.rating), 0) / productReviews.length;
-  summary.textContent = `${average.toFixed(1)} de 5 (${productReviews.length})`;
-  list.innerHTML = productReviews.slice(-3).reverse().map((review) => `
-    <article>
-      <strong>${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</strong>
-      <p>${review.comment || "Sem comentario."}</p>
-    </article>
-  `).join("");
-}
-
-function saveReview() {
-  if (!currentProductId) return;
-  const normalizedId = normalizeProductId(currentProductId);
-  const rating = Number(document.querySelector("#reviewRating").value);
-  const comment = document.querySelector("#reviewComment").value.trim();
-
-  if (!reviews[normalizedId]) reviews[normalizedId] = [];
-  reviews[normalizedId].push({ rating, comment, createdAt: new Date().toISOString() });
-  writeStorage(storageKeys.reviews, reviews);
-  document.querySelector("#reviewComment").value = "";
-  renderReviews(normalizedId);
-}
-
-function getRelatedProducts(currentProduct) {
-  const currentFacets = getProductFacets(currentProduct);
-  return products
-    .filter((product) => product.active !== false && normalizeProductId(product.id) !== normalizeProductId(currentProduct.id))
-    .map((product, index) => {
-      const facets = getProductFacets(product);
-      let score = 0;
-      if (product.color === currentProduct.color) score += 3;
-      if (facets.mood === currentFacets.mood) score += 2;
-      if (facets.size === currentFacets.size) score += 1;
-      return { product, score, index };
-    })
-    .sort((first, second) => second.score - first.score || first.index - second.index)
-    .slice(0, 3)
-    .map((item) => item.product);
-}
-
-function renderRelatedProducts(currentProduct) {
-  const related = getRelatedProducts(currentProduct);
-  relatedProducts.innerHTML = "";
-
-  if (!related.length) {
-    relatedProducts.innerHTML = '<p class="empty-state">Cadastre mais velas para mostrar recomendacoes.</p>';
-    return;
-  }
-
-  related.forEach((product) => {
-    const card = productTemplate.content.firstElementChild.cloneNode(true);
-    card.dataset.color = product.color;
-    card.dataset.productId = normalizeProductId(product.id);
-    if (product.imageUrl) {
-      const photo = card.querySelector(".product-photo");
-      photo.src = product.imageUrl;
-      photo.alt = product.name;
-      card.classList.add("has-photo");
-    }
-    card.querySelector(".tag").textContent = product.scent;
-    card.querySelector("h3").textContent = product.name;
-    card.querySelector("p").textContent = product.description;
-    card.querySelector("p").insertAdjacentHTML("afterend", renderProductMeta(product));
-    card.querySelector("strong").textContent = formatCurrency(product.price);
-
-    const favoriteButton = card.querySelector(".product-favorite");
-    const isFavorite = isFavoriteProduct(product.id);
-    favoriteButton.classList.toggle("is-active", isFavorite);
-    favoriteButton.setAttribute("aria-label", isFavorite ? `Remover ${product.name} dos favoritos` : `Adicionar ${product.name} aos favoritos`);
-    favoriteButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      toggleFavorite(product.id);
-    });
-
-    const button = card.querySelector(".product-footer button");
-    button.querySelector("span").textContent = product.stock > 0 ? "Adicionar" : "Esgotada";
-    button.disabled = product.stock <= 0;
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      addToCart(product.id);
-    });
-
-    relatedProducts.append(card);
-  });
-}
-
-function getDetailViews(product) {
-  return [
-    { id: "photo", label: "Foto", imageUrl: product.imageUrl || "", color: product.color || "clay" },
-    { id: "extra-one", label: "Extra 1", imageUrl: product.extraImageUrlOne || "", color: "honey" },
-    { id: "extra-two", label: "Extra 2", imageUrl: product.extraImageUrlTwo || "", color: product.color || "sage" },
+function validateProduct(product) {
+  $$("#productForm .field-error").forEach((field) => field.classList.remove("field-error"));
+  const checks = [
+    ["#productName", product.name.length >= 3, "Informe um nome com pelo menos 3 caracteres."],
+    ["#productScent", product.scent.length >= 3, "Informe um aroma com pelo menos 3 caracteres."],
+    ["#productDescription", product.description.length >= 20, "A descricao precisa ter pelo menos 20 caracteres."],
+    ["#productPrice", Number.isFinite(product.price) && product.price >= 1, "Informe um preco valido."],
+    ["#productStock", Number.isInteger(product.stock) && product.stock >= 0, "Informe um estoque valido."],
+    ["#productMinimumStock", Number.isInteger(product.minimumStock) && product.minimumStock >= 0, "Informe um estoque minimo valido."],
   ];
-}
-
-function setDetailView(product, viewId) {
-  const views = getDetailViews(product);
-  const view = views.find((candidate) => candidate.id === viewId) || views[0];
-  selectedDetailView = view.id;
-
-  const image = document.querySelector("#detailImage");
-  const media = document.querySelector("#detailMedia");
-  media.dataset.color = view.color;
-  media.classList.toggle("has-photo", Boolean(view.imageUrl));
-  image.src = view.imageUrl;
-  image.alt = view.imageUrl ? product.name : "";
-}
-
-function renderDetailThumbs(product) {
-  const thumbs = document.querySelector("#detailThumbs");
-  const views = getDetailViews(product);
-  thumbs.innerHTML = "";
-
-  views.forEach((view) => {
-    const button = document.createElement("button");
-    button.className = "detail-thumb";
-    button.type = "button";
-    button.dataset.color = view.color;
-    button.classList.toggle("is-active", view.id === selectedDetailView);
-    button.setAttribute("aria-label", `Ver ${view.label} de ${product.name}`);
-    button.innerHTML = view.imageUrl ? `<img src="${view.imageUrl}" alt="" />` : '<span class="product-flame"></span><span class="product-jar"></span>';
-    button.addEventListener("click", () => {
-      setDetailView(product, view.id);
-      renderDetailThumbs(product);
-    });
-    thumbs.append(button);
-  });
-
-  setDetailView(product, selectedDetailView);
-}
-
-function renderProducts() {
-  const query = normalizeText(searchInput.value.trim());
-  const selectedFilters = getSelectedFilters();
-  const filteredProducts = sortProductList(products.filter((product) => {
-    if (product.active === false) return false;
-    const searchable = normalizeText(`${product.name} ${product.scent} ${product.description}`);
-    return searchable.includes(query) && productMatchesFilters(product, selectedFilters);
-  }));
-
-  productGrid.innerHTML = "";
-
-  if (!filteredProducts.length) {
-    productGrid.innerHTML = '<p class="empty-state">Nenhuma vela encontrada.</p>';
-    return;
-  }
-
-  filteredProducts.forEach((product) => {
-    const card = productTemplate.content.firstElementChild.cloneNode(true);
-    card.dataset.color = product.color;
-    card.dataset.productId = normalizeProductId(product.id);
-    if (product.imageUrl) {
-      const photo = card.querySelector(".product-photo");
-      photo.src = product.imageUrl;
-      photo.alt = product.name;
-      card.classList.add("has-photo");
-    }
-    card.querySelector(".tag").textContent = product.scent;
-    card.querySelector("h3").textContent = product.name;
-    card.querySelector("p").textContent = product.description;
-    card.querySelector("p").insertAdjacentHTML("afterend", renderProductMeta(product));
-    card.querySelector("strong").textContent = formatCurrency(product.price);
-
-    const favoriteButton = card.querySelector(".product-favorite");
-    const isFavorite = isFavoriteProduct(product.id);
-    favoriteButton.classList.toggle("is-active", isFavorite);
-    favoriteButton.setAttribute("aria-label", isFavorite ? `Remover ${product.name} dos favoritos` : `Adicionar ${product.name} aos favoritos`);
-    favoriteButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      toggleFavorite(product.id);
-    });
-
-    const button = card.querySelector(".product-footer button");
-    button.querySelector("span").textContent = product.stock > 0 ? "Adicionar" : "Esgotada";
-    button.disabled = product.stock <= 0;
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      addToCart(product.id);
-    });
-
-    productGrid.append(card);
-  });
-}
-
-function renderProductMeta(product) {
-  return `
-    <div class="product-meta">
-      <span>${getProductSize(product)}</span>
-      <span>${optionLabel(product.mood)}</span>
-      <span>${product.stock > 0 ? `${product.stock} disp.` : "Esgotada"}</span>
-    </div>
-  `;
-}
-
-function validateProductPayload(product) {
-  if (product.name.length < 3) throw new Error("Informe um nome com pelo menos 3 caracteres.");
-  if (product.scent.length < 3) throw new Error("Informe um aroma com pelo menos 3 caracteres.");
-  if (product.description.length < 20) throw new Error("A descricao precisa ter pelo menos 20 caracteres.");
-  if (!Number.isFinite(product.price) || product.price < 1) throw new Error("Informe um preco valido.");
-  if (!Number.isInteger(product.stock) || product.stock < 0) throw new Error("Informe um estoque valido.");
-  if (!["rose", "sage", "honey", "clay", "ocean"].includes(product.color)) throw new Error("Escolha uma familia de cor valida.");
-  if (!["120g", "250g"].includes(product.size)) throw new Error("Escolha um tamanho valido.");
-  if (!["classica", "presente"].includes(product.occasion)) throw new Error("Escolha uma ocasiao valida.");
-  if (!["aconchegante", "relaxante"].includes(product.mood)) throw new Error("Escolha uma sensacao valida.");
-}
-
-function renderAdminList() {
-  renderAdminDashboard();
-  adminList.innerHTML = "";
-
-  if (!products.length) {
-    adminList.innerHTML = '<p class="empty-state">Cadastre a primeira vela para ela aparecer na loja.</p>';
-    return;
-  }
-
-  products.forEach((product) => {
-    const item = document.createElement("article");
-    item.className = "admin-item";
-    item.innerHTML = `
-      <div>
-        <h3>${product.name}</h3>
-        <p>${product.scent} - ${getProductSize(product)} - ${optionLabel(product.mood)} - ${formatCurrency(product.price)} - ${product.stock} em estoque</p>
-        <span class="status-pill ${product.active ? "is-active" : "is-muted"}">${product.active ? "Ativa na loja" : "Oculta da loja"}</span>
-      </div>
-      <div class="admin-actions">
-        <button class="small-button" type="button" aria-label="Editar ${product.name}">Editar</button>
-        <button class="small-button" type="button" aria-label="${product.active ? "Desativar" : "Ativar"} ${product.name}">${product.active ? "Desativar" : "Ativar"}</button>
-      </div>
-    `;
-
-    const [editButton, toggleButton] = item.querySelectorAll("button");
-    editButton.addEventListener("click", () => editProduct(product.id));
-    toggleButton.addEventListener("click", () => toggleProductActive(product.id, !product.active));
-
-    adminList.append(item);
-  });
-
-  renderAdminStockAlerts();
-}
-
-function renderAdminDashboard() {
-  const totalOrders = adminOrderHistory.length;
-  const totalSales = adminOrderHistory
-    .filter((order) => order.status !== "CANCELED")
-    .reduce((sum, order) => sum + Number(order.total || 0), 0);
-  const activeProducts = products.filter((product) => product.active).length;
-  const lowStock = products.filter((product) => product.active && Number(product.stock) <= 5).length;
-
-  document.querySelector("#adminTotalOrders").textContent = totalOrders;
-  document.querySelector("#adminTotalSales").textContent = formatCurrency(totalSales);
-  document.querySelector("#adminActiveProducts").textContent = activeProducts;
-  document.querySelector("#adminLowStock").textContent = lowStock;
-}
-
-function renderAdminStockAlerts() {
-  if (!adminStockAlerts) return;
-
-  const lowStockProducts = products
-    .filter((product) => product.active !== false && Number(product.stock) <= 5)
-    .slice(0, 4);
-
-  if (!lowStockProducts.length) {
-    adminStockAlerts.innerHTML = '<p class="empty-state">Nenhum produto com estoque baixo.</p>';
-    return;
-  }
-
-  adminStockAlerts.innerHTML = lowStockProducts.map((product) => `
-    <article class="admin-item">
-      <div>
-        <h3>${product.name}</h3>
-        <p>${product.stock} unidades em estoque - ${getProductSize(product)}</p>
-      </div>
-      <span class="status-pill is-muted">Repor</span>
-    </article>
-  `).join("");
-}
-
-function renderAdminOrders() {
-  renderAdminDashboard();
-  adminOrders.innerHTML = "";
-
-  if (!isAdmin()) {
-    adminOrders.innerHTML = '<p class="empty-state">Entre como administradora para ver os pedidos.</p>';
-    renderAdminRecentOrders();
-    renderAdminCustomers();
-    return;
-  }
-
-  if (!adminOrderHistory.length) {
-    adminOrders.innerHTML = '<p class="empty-state">Nenhum pedido recebido ainda.</p>';
-    renderAdminRecentOrders();
-    renderAdminCustomers();
-    return;
-  }
-
-  adminOrderHistory.forEach((order) => {
-    const item = document.createElement("article");
-    item.className = "admin-order-card";
-    item.innerHTML = `
-      <div>
-        <h3>Pedido #${order.id} - ${order.customerName}</h3>
-        <p>${formatDate(order.createdAt)} - ${paymentLabel(order.paymentMethod)} - ${formatCurrency(order.total)}</p>
-        <p>${order.deliveryAddress || "Endereco nao informado"}</p>
-        ${(order.items || []).length ? `<ul class="order-items">${order.items.map((orderItem) => `<li>${orderItem.quantity}x ${orderItem.productName}</li>`).join("")}</ul>` : ""}
-      </div>
-      <label>
-        Status
-        <select data-order-status="${order.id}">
-          ${["CREATED", "PREPARING", "SHIPPED", "DELIVERED", "CANCELED"].map((status) => `<option value="${status}" ${order.status === status ? "selected" : ""}>${statusLabel(status)}</option>`).join("")}
-        </select>
-      </label>
-    `;
-
-    item.querySelector("select").addEventListener("change", (event) => updateOrderStatus(order.id, event.target.value));
-    adminOrders.append(item);
-  });
-
-  renderAdminRecentOrders();
-  renderAdminCustomers();
-}
-
-function renderAdminRecentOrders() {
-  if (!adminRecentOrders) return;
-
-  if (!adminOrderHistory.length) {
-    adminRecentOrders.innerHTML = '<p class="empty-state">Nenhum pedido recebido ainda.</p>';
-    return;
-  }
-
-  adminRecentOrders.innerHTML = adminOrderHistory.slice(0, 4).map((order) => `
-    <article class="admin-order-card">
-      <div>
-        <h3>Pedido #${order.id} - ${order.customerName}</h3>
-        <p>${statusLabel(order.status)} - ${formatCurrency(order.total)}</p>
-      </div>
-    </article>
-  `).join("");
-}
-
-function renderAdminCustomers() {
-  if (!adminCustomers) return;
-
-  const customers = new Map();
-  adminOrderHistory.forEach((order) => {
-    const key = order.customerEmail || order.customerName || `cliente-${order.customerId || order.id}`;
-    const current = customers.get(key) || {
-      name: order.customerName || "Cliente",
-      email: order.customerEmail || "E-mail nao informado",
-      orders: 0,
-      total: 0,
-      lastOrder: order.createdAt,
-    };
-    current.orders += 1;
-    current.total += order.status === "CANCELED" ? 0 : Number(order.total || 0);
-    current.lastOrder = order.createdAt || current.lastOrder;
-    customers.set(key, current);
-  });
-
-  const customerList = Array.from(customers.values()).sort((a, b) => b.total - a.total);
-
-  if (!customerList.length) {
-    adminCustomers.innerHTML = '<p class="empty-state">Nenhum cliente com pedido registrado ainda.</p>';
-    return;
-  }
-
-  adminCustomers.innerHTML = customerList.map((customer) => `
-    <article class="admin-item">
-      <div>
-        <h3>${customer.name}</h3>
-        <p>${customer.email} - ${customer.orders} pedido(s) - ultimo em ${formatDate(customer.lastOrder)}</p>
-      </div>
-      <strong>${formatCurrency(customer.total)}</strong>
-    </article>
-  `).join("");
-}
-
-function renderUser() {
-  sessionPill.textContent = user ? `${user.role === "ADMIN" ? "Admin" : "Cliente"}: ${user.name}` : "Visitante";
-  document.querySelector("#loginEmail").value = user?.email || "";
-  document.querySelectorAll(".admin-only").forEach((element) => {
-    element.classList.toggle("hidden", !isAdmin());
-  });
-  document.querySelectorAll(".guest-only").forEach((element) => {
-    element.classList.toggle("hidden", Boolean(user));
-  });
-  document.querySelectorAll(".logged-only").forEach((element) => {
-    element.classList.toggle("hidden", !user);
-  });
-  renderAccount();
-  const deliveryAddress = document.querySelector("#deliveryAddress");
-  if (deliveryAddress && !deliveryAddress.value && user?.address) {
-    deliveryAddress.value = addressToText(user.address);
-  }
-  updateAdminAccess();
-}
-
-function renderAccount() {
-  document.querySelector("#accountTitle").textContent = user ? `Ola, ${user.name}` : "Conta";
-  document.querySelector("#accountIntro").textContent = isAdmin()
-    ? "Confira os dados da sessao atual. As ferramentas de gestao ficam no painel Admin."
-    : "Confira os dados da sessao atual e acompanhe seus pedidos.";
-  document.querySelector("#accountName").textContent = user?.name || "-";
-  document.querySelector("#accountEmail").textContent = user?.email || "-";
-  document.querySelector("#accountPhone").textContent = user?.phone || "-";
-  renderAccountAddress(user?.address);
-  document.querySelector("#accountRole").textContent = user?.role === "ADMIN" ? "Administrador" : user ? "Cliente" : "-";
-  renderAccountOrders();
-}
-
-function renderAccountOrders() {
-  if (!user) {
-    accountOrders.innerHTML = '<p class="empty-state">Entre na conta para ver seus pedidos.</p>';
-    return;
-  }
-
-  if (!accountOrderHistory.length) {
-    accountOrders.innerHTML = '<p class="empty-state">Nenhum pedido salvo ainda.</p>';
-    return;
-  }
-
-  accountOrders.innerHTML = "";
-  accountOrderHistory.forEach((order) => {
-    const orderItems = order.items || [];
-    const item = document.createElement("article");
-    item.className = "order-card";
-    item.innerHTML = `
-      <div>
-        <h3>Pedido #${order.id}</h3>
-        <p>${formatDate(order.createdAt)} - ${paymentLabel(order.paymentMethod)} - ${statusLabel(order.status)}</p>
-        <p>${order.deliveryAddress || "Endereco nao informado"}</p>
-        ${orderItems.length ? `<ul class="order-items">${orderItems.map((orderItem) => `<li>${orderItem.quantity}x ${orderItem.productName} - ${formatCurrency(orderItem.unitPrice)}</li>`).join("")}</ul>` : ""}
-      </div>
-      <strong>${formatCurrency(order.total)}</strong>
-    `;
-    accountOrders.append(item);
-  });
-}
-
-function addressToText(address) {
-  if (!address) return "";
-  if (typeof address === "string") return address;
-  return [
-    address.street,
-    address.number,
-    address.neighborhood,
-    address.complement,
-    address.city && address.state ? `${address.city} - ${address.state}` : "",
-    address.cep,
-  ].filter(Boolean).join(", ");
-}
-
-async function loadAccountOrders() {
-  if (!user?.id || !user?.authHeader) {
-    accountOrderHistory = [];
-    renderAccountOrders();
-    return;
-  }
-
-  try {
-    accountOrderHistory = await apiRequest(`/api/orders/customer/${user.id}`, { authenticated: true });
-  } catch {
-    accountOrderHistory = [];
-  }
-
-  renderAccountOrders();
-}
-
-async function loadAdminOrders() {
-  if (!isAdmin()) {
-    adminOrderHistory = [];
-    renderAdminOrders();
-    return;
-  }
-
-  try {
-    adminOrderHistory = await apiRequest("/api/orders", { authenticated: true });
-  } catch {
-    adminOrderHistory = [];
-  }
-
-  renderAdminOrders();
-}
-
-function updateAdminAccess() {
-  adminLayout.classList.toggle("locked", !isAdmin());
-  adminLocked.classList.toggle("visible", !isAdmin());
-  if (isAdmin()) {
-    renderAdminOrders();
+  const error = checks.find(([, ok]) => !ok);
+  if (error) {
+    $(error[0]).classList.add("field-error");
+    $(error[0]).focus();
+    throw new Error(error[2]);
   }
 }
 
-function setFormMessage(elementId, text, isError = false) {
-  const message = document.querySelector(elementId);
-  message.textContent = text;
-  message.classList.toggle("error", isError);
-}
-
-function normalizeEmail(email) {
-  return email.trim().toLowerCase();
-}
-
-function onlyDigits(value) {
-  return value.replace(/\D/g, "");
-}
-
-function formatCep(value) {
-  const digits = onlyDigits(value).slice(0, 8);
-  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
-}
-
-function setCepMessage(text, isError = false) {
-  const message = document.querySelector("#cepMessage");
-  message.textContent = text;
-  message.classList.toggle("error", isError);
-}
-
-function buildRegisterAddress() {
-  const cep = onlyDigits(document.querySelector("#registerCep").value);
-  const street = document.querySelector("#registerStreet").value.trim();
-  const number = document.querySelector("#registerNumber").value.trim();
-  const neighborhood = document.querySelector("#registerNeighborhood").value.trim();
-  const complement = document.querySelector("#registerComplement").value.trim();
-  const city = document.querySelector("#registerCity").value.trim();
-  const state = document.querySelector("#registerState").value.trim().toUpperCase();
-
-  if (cep.length !== 8) throw new Error("Informe um CEP valido.");
-  if (!street || !number || !neighborhood || !city || !state) {
-    throw new Error("Complete o endereco com rua, numero, bairro, cidade e UF.");
-  }
-
-  return {
-    cep: formatCep(cep),
-    street,
-    number,
-    neighborhood,
-    complement,
-    city,
-    state,
-  };
-}
-
-function renderAccountAddress(address) {
-  const fallback = "-";
-
-  if (!address) {
-    document.querySelector("#accountAddressCep").textContent = fallback;
-    document.querySelector("#accountAddressStreet").textContent = fallback;
-    document.querySelector("#accountAddressNumber").textContent = fallback;
-    document.querySelector("#accountAddressNeighborhood").textContent = fallback;
-    document.querySelector("#accountAddressComplement").textContent = fallback;
-    document.querySelector("#accountAddressCityState").textContent = fallback;
-    return;
-  }
-
-  if (typeof address === "string") {
-    document.querySelector("#accountAddressCep").textContent = fallback;
-    document.querySelector("#accountAddressStreet").textContent = address || fallback;
-    document.querySelector("#accountAddressNumber").textContent = fallback;
-    document.querySelector("#accountAddressNeighborhood").textContent = fallback;
-    document.querySelector("#accountAddressComplement").textContent = fallback;
-    document.querySelector("#accountAddressCityState").textContent = fallback;
-    return;
-  }
-
-  document.querySelector("#accountAddressCep").textContent = address.cep || fallback;
-  document.querySelector("#accountAddressStreet").textContent = address.street || fallback;
-  document.querySelector("#accountAddressNumber").textContent = address.number || fallback;
-  document.querySelector("#accountAddressNeighborhood").textContent = address.neighborhood || fallback;
-  document.querySelector("#accountAddressComplement").textContent = address.complement || fallback;
-  document.querySelector("#accountAddressCityState").textContent = address.city && address.state ? `${address.city} - ${address.state}` : fallback;
-}
-
-async function searchCepAddress() {
-  const cep = onlyDigits(registerCepInput.value);
-  registerCepInput.value = formatCep(cep);
-
-  if (cep.length === 0) {
-    setCepMessage("Digite o CEP para preencher o endereco.");
-    return;
-  }
-  if (cep.length !== 8) {
-    setCepMessage("Digite um CEP com 8 numeros.", true);
-    return;
-  }
-
-  setCepMessage("Buscando endereco pelo CEP...");
-  try {
-    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-    if (!response.ok) throw new Error();
-    const data = await response.json();
-    if (data.erro) throw new Error();
-
-    document.querySelector("#registerStreet").value = data.logradouro || "";
-    document.querySelector("#registerNeighborhood").value = data.bairro || "";
-    document.querySelector("#registerCity").value = data.localidade || "";
-    document.querySelector("#registerState").value = data.uf || "";
-    setCepMessage("Endereco encontrado. Complete numero e bairro se necessario.");
-    document.querySelector("#registerNumber").focus();
-  } catch {
-    setCepMessage("Nao encontrei esse CEP. Preencha o endereco manualmente.", true);
-  }
-}
-
-function isAdmin() {
-  return user?.role === "ADMIN";
-}
-
-function getCartSubtotal() {
-  return cart.reduce((sum, item) => {
-    const product = findProduct(item.productId);
-    return product ? sum + product.price * item.quantity : sum;
-  }, 0);
-}
-
-function getCouponDiscount(subtotal = getCartSubtotal()) {
-  if (!coupon?.discount) return 0;
-  return Number((subtotal * coupon.discount).toFixed(2));
-}
-
-function getShippingCost(subtotal = getCartSubtotal()) {
-  if (!cart.length || shippingQuote.cost === null) return 0;
-  return subtotal >= 180 || coupon?.freeShipping ? 0 : shippingQuote.cost;
-}
-
-function renderShipping(subtotal = getCartSubtotal()) {
-  const shippingCost = getShippingCost(subtotal);
-  cartCepInput.value = shippingQuote.cep || "";
-
-  if (!cart.length) {
-    cartDelivery.textContent = "A calcular";
-    shippingMessage.textContent = "Informe o CEP para calcular uma entrega estimada.";
-    return;
-  }
-
-  if (shippingQuote.cost === null) {
-    cartDelivery.textContent = "A calcular";
-    shippingMessage.textContent = "Informe o CEP para calcular uma entrega estimada.";
-    return;
-  }
-
-  cartDelivery.textContent = shippingCost === 0 ? "Gratis" : formatCurrency(shippingCost);
-  shippingMessage.textContent = `Entrega estimada em ${shippingQuote.days} dias uteis para ${shippingQuote.cep}.`;
-}
-
-function calculateShipping() {
-  const cep = onlyDigits(cartCepInput.value);
-  cartCepInput.value = formatCep(cep);
-
-  if (cep.length !== 8) {
-    shippingQuote = { cep: "", cost: null, days: null };
-    localStorage.removeItem(storageKeys.shipping);
-    renderCart();
-    shippingMessage.textContent = "Digite um CEP com 8 numeros.";
-    return;
-  }
-
-  const subtotal = getCartSubtotal();
-  const baseCost = 12.9 + (Number(cep.slice(-2)) % 7);
-  const days = 3 + (Number(cep[0]) % 4);
-  shippingQuote = {
-    cep: formatCep(cep),
-    cost: Number(baseCost.toFixed(2)),
-    days,
-  };
-
-  writeStorage(storageKeys.shipping, shippingQuote);
-  renderCart();
-  if (subtotal >= 180) {
-    shippingMessage.textContent = `Entrega gratis estimada em ${days} dias uteis para ${shippingQuote.cep}.`;
-  }
-}
-
-function applyCoupon() {
-  const code = normalizeText(couponCodeInput.value.trim()).toUpperCase();
-  const coupons = {
-    CALORINE10: { code: "CALORINE10", discount: 0.1, freeShipping: false },
-    FRETEGRATIS: { code: "FRETEGRATIS", discount: 0, freeShipping: true },
-  };
-
-  if (!code) {
-    coupon = { code: "", discount: 0, freeShipping: false };
-    localStorage.removeItem(storageKeys.coupon);
-    couponMessage.textContent = "Cupom removido.";
-    renderCart();
-    return;
-  }
-
-  if (!coupons[code]) {
-    coupon = { code: "", discount: 0, freeShipping: false };
-    localStorage.removeItem(storageKeys.coupon);
-    couponMessage.textContent = "Cupom nao encontrado.";
-    renderCart();
-    return;
-  }
-
-  coupon = coupons[code];
-  writeStorage(storageKeys.coupon, coupon);
-  couponMessage.textContent = coupon.freeShipping ? "Cupom aplicado: frete gratis." : "Cupom aplicado: 10% de desconto.";
-  renderCart();
-}
-
-function renderPaymentSimulation() {
-  const method = paymentMethodInput.value;
-  const total = getCartSubtotal() - getCouponDiscount() + getShippingCost();
-  const messages = {
-    pix: `Pix simulado: copie a chave CALORINE-${Math.max(1, Math.round(total * 100))}.`,
-    card: "Cartao simulado: o pedido sera aprovado automaticamente neste ambiente.",
-    whatsapp: "WhatsApp: vamos abrir uma mensagem pronta com os itens do pedido.",
-    boleto: "Boleto simulado: o vencimento fica para 2 dias uteis.",
-  };
-  paymentSimulation.textContent = messages[method] || "";
-}
-
-function buildWhatsAppMessage() {
-  const lines = cart.map((item) => {
-    const product = findProduct(item.productId);
-    return product ? `${item.quantity}x ${product.name} - ${formatCurrency(product.price * item.quantity)}` : "";
-  }).filter(Boolean);
-  const subtotal = getCartSubtotal();
-  const discount = getCouponDiscount(subtotal);
-  const shippingCost = getShippingCost(subtotal);
-  const total = subtotal - discount + shippingCost;
-
-  return [
-    "Ola, quero finalizar meu pedido na Calorine:",
-    ...lines,
-    `Subtotal: ${formatCurrency(subtotal)}`,
-    discount ? `Desconto: ${formatCurrency(discount)}` : "",
-    `Entrega: ${shippingCost === 0 ? "Gratis" : formatCurrency(shippingCost)}`,
-    `Total: ${formatCurrency(total)}`,
-    shippingQuote.cep ? `CEP: ${shippingQuote.cep}` : "",
-    document.querySelector("#deliveryAddress").value.trim() ? `Endereco: ${document.querySelector("#deliveryAddress").value.trim()}` : "",
-  ].filter(Boolean).join("\n");
-}
-
-function openWhatsAppCheckout() {
-  if (!cart.length) {
-    checkoutMessage.textContent = "Adicione uma vela antes de finalizar pelo WhatsApp.";
-    return;
-  }
-  const url = `https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage())}`;
-  window.open(url, "_blank", "noopener");
-}
-
-function renderCart() {
-  cartItems.innerHTML = "";
-  checkoutPreview.innerHTML = "";
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = getCartSubtotal();
-  const couponDiscount = getCouponDiscount(subtotal);
-  const shippingCost = getShippingCost(subtotal);
-  const total = Math.max(0, subtotal - couponDiscount + shippingCost);
-
-  cartCount.textContent = totalItems;
-  checkoutItems.textContent = totalItems;
-  cartSubtotal.textContent = formatCurrency(subtotal);
-  cartTotal.textContent = formatCurrency(total);
-  couponCodeInput.value = coupon?.code || "";
-  renderShipping(subtotal);
-  renderPaymentSimulation();
-
-  if (!cart.length) {
-    cartItems.innerHTML = '<p class="empty-state">Seu carrinho esta vazio.</p>';
-    checkoutPreview.innerHTML = '<p class="hint-text">Adicione produtos para ver o resumo do pedido.</p>';
-    return;
-  }
-
-  cart.forEach((item) => {
-    const product = findProduct(item.productId);
-    if (!product) return;
-
-    const row = document.createElement("article");
-    row.className = "cart-item";
-    row.innerHTML = `
-      <div>
-        <h3>${product.name}</h3>
-        <p>${item.quantity} un. x ${formatCurrency(product.price)}</p>
-      </div>
-      <div class="cart-item-actions">
-        <div class="quantity">
-          <button type="button" aria-label="Diminuir ${product.name}">-</button>
-          <strong>${item.quantity}</strong>
-          <button type="button" aria-label="Aumentar ${product.name}">+</button>
-        </div>
-        <strong class="cart-line-total">${formatCurrency(product.price * item.quantity)}</strong>
-        <button class="remove-item" type="button" aria-label="Remover ${product.name} do carrinho">Remover</button>
-      </div>
-    `;
-
-    const [decreaseButton, increaseButton] = row.querySelectorAll(".quantity button");
-    const removeButton = row.querySelector(".remove-item");
-    decreaseButton.addEventListener("click", () => updateCart(product.id, -1));
-    increaseButton.addEventListener("click", () => updateCart(product.id, 1));
-    removeButton.addEventListener("click", () => removeFromCart(product.id));
-    cartItems.append(row);
-  });
-  cartItems.scrollTop = 0;
-
-  checkoutPreview.innerHTML = `
-    <h3>Resumo do pedido</h3>
-    ${cart.map((item) => {
-      const product = findProduct(item.productId);
-      if (!product) return "";
-      return `<div><span>${item.quantity}x ${product.name}</span><strong>${formatCurrency(product.price * item.quantity)}</strong></div>`;
-    }).join("")}
-    ${couponDiscount ? `<div><span>Cupom ${coupon.code}</span><strong>- ${formatCurrency(couponDiscount)}</strong></div>` : ""}
-    <div><span>Entrega</span><strong>${shippingQuote.cost === null ? "A calcular" : (shippingCost === 0 ? "Gratis" : formatCurrency(shippingCost))}</strong></div>
-  `;
-}
-
-function renderFavorites() {
-  favoriteItems.innerHTML = "";
-  const favoriteProducts = favoriteIds
-    .map((favoriteId) => findProduct(favoriteId))
-    .filter(Boolean);
-
-  favoriteCount.textContent = favoriteProducts.length;
-
-  if (!favoriteProducts.length) {
-    favoriteItems.innerHTML = '<p class="empty-state">Nenhuma vela favorita ainda.</p>';
-    return;
-  }
-
-  favoriteProducts.forEach((product) => {
-    const row = document.createElement("article");
-    row.className = "cart-item favorite-item";
-    row.innerHTML = `
-      ${product.imageUrl ? `<img class="favorite-thumb" src="${product.imageUrl}" alt="${product.name}" />` : '<span class="favorite-thumb" aria-hidden="true"></span>'}
-      <div>
-        <h3>${product.name}</h3>
-        <p>${product.scent} - ${formatCurrency(product.price)}</p>
-      </div>
-      <button class="small-button" type="button" aria-label="Remover ${product.name} dos favoritos">Remover</button>
-    `;
-
-    row.querySelector("button").addEventListener("click", () => toggleFavorite(product.id));
-    favoriteItems.append(row);
-  });
-}
-
-function toggleFavorite(id) {
-  const normalizedId = normalizeProductId(id);
-  if (isFavoriteProduct(normalizedId)) {
-    favoriteIds = favoriteIds.filter((favoriteId) => normalizeProductId(favoriteId) !== normalizedId);
-  } else {
-    favoriteIds.push(normalizedId);
-  }
-
-  writeStorage(storageKeys.favorites, favoriteIds);
-  document.querySelector("#openFavorites").classList.add("is-bouncing");
-  window.setTimeout(() => document.querySelector("#openFavorites").classList.remove("is-bouncing"), 360);
-  renderProducts();
-  renderFavorites();
-  if (currentProductId) renderProductDetail();
-}
-
-function addToCart(id) {
-  const normalizedId = normalizeProductId(id);
-  const product = findProduct(normalizedId);
-  const cartItem = cart.find((item) => normalizeProductId(item.productId) === normalizedId);
-
-  if (!product || product.active === false || product.stock <= (cartItem?.quantity || 0)) return;
-
-  if (cartItem) {
-    cartItem.quantity += 1;
-  } else {
-    cart.push({ productId: normalizedId, quantity: 1 });
-  }
-
-  writeStorage(storageKeys.cart, cart);
-  renderCart();
-  document.querySelector("#openCart").classList.add("is-bouncing");
-  window.setTimeout(() => document.querySelector("#openCart").classList.remove("is-bouncing"), 360);
-  openCart();
-}
-
-function updateCart(id, amount) {
-  const normalizedId = normalizeProductId(id);
-  const item = cart.find((candidate) => normalizeProductId(candidate.productId) === normalizedId);
-  const product = findProduct(normalizedId);
-  if (!item || !product) return;
-
-  item.quantity += amount;
-  if (item.quantity <= 0) {
-    cart = cart.filter((candidate) => normalizeProductId(candidate.productId) !== normalizedId);
-  }
-  if (item.quantity > product.stock) {
-    item.quantity = product.stock;
-  }
-
-  writeStorage(storageKeys.cart, cart);
-  renderCart();
-}
-
-function removeFromCart(id) {
-  const normalizedId = normalizeProductId(id);
-  cart = cart.filter((candidate) => normalizeProductId(candidate.productId) !== normalizedId);
-  writeStorage(storageKeys.cart, cart);
-  renderCart();
-}
-
-function editProduct(productId) {
-  const product = findProduct(productId);
-  if (!product) return;
-
-  document.querySelector("#productId").value = product.id;
-  document.querySelector("#productName").value = product.name;
-  document.querySelector("#productScent").value = product.scent;
-  document.querySelector("#productPrice").value = product.price;
-  document.querySelector("#productStock").value = product.stock;
-  document.querySelector("#productColor").value = product.color;
-  document.querySelector("#productSize").value = product.size || getProductSize(product);
-  document.querySelector("#productOccasion").value = product.occasion || "classica";
-  document.querySelector("#productMood").value = product.mood || "aconchegante";
-  document.querySelector("#productDescription").value = product.description;
-  document.querySelector("#productImageCurrent").value = product.imageUrl || "";
-  document.querySelector("#productExtraImageOneCurrent").value = product.extraImageUrlOne || "";
-  document.querySelector("#productExtraImageTwoCurrent").value = product.extraImageUrlTwo || "";
-  productImageInput.value = "";
-  productExtraImageOneInput.value = "";
-  productExtraImageTwoInput.value = "";
-  renderImagePreview(product.imageUrl);
-  renderExtraImagePreviews(product.extraImageUrlOne, product.extraImageUrlTwo);
-  document.querySelector("#productName").focus();
-}
-
-function deleteProduct(productId) {
-  toggleProductActive(productId, false);
-}
-
-function clearForm() {
-  productForm.reset();
-  document.querySelector("#productId").value = "";
-  document.querySelector("#productImageCurrent").value = "";
-  document.querySelector("#productExtraImageOneCurrent").value = "";
-  document.querySelector("#productExtraImageTwoCurrent").value = "";
-  renderImagePreview(null);
-  renderExtraImagePreviews(null, null);
-}
-
-function openCart() {
-  cartDrawer.classList.add("open");
-  cartDrawer.setAttribute("aria-hidden", "false");
-  document.querySelector(".cart-panel").scrollTop = 0;
-}
-
-function closeCart() {
-  cartDrawer.classList.remove("open");
-  cartDrawer.setAttribute("aria-hidden", "true");
-}
-
-function openFavorites() {
-  favoritesDrawer.classList.add("open");
-  favoritesDrawer.setAttribute("aria-hidden", "false");
-}
-
-function closeFavorites() {
-  favoritesDrawer.classList.remove("open");
-  favoritesDrawer.setAttribute("aria-hidden", "true");
-}
-
-function switchAdminSection(section) {
-  const titles = {
-    overview: ["painel", "Visao geral"],
-    orders: ["operacao", "Pedidos"],
-    products: ["catalogo", "Velas"],
-    customers: ["relacionamento", "Clientes"],
-    coupons: ["promocoes", "Cupons"],
-    settings: ["loja", "Configuracoes"],
-  };
-  const activeSection = titles[section] ? section : "overview";
-
-  document.querySelectorAll("[data-admin-view]").forEach((view) => {
-    view.classList.toggle("is-active", view.dataset.adminView === activeSection);
-  });
-  document.querySelectorAll(".admin-nav [data-admin-section]").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.adminSection === activeSection);
-  });
-
-  const [eyebrow, title] = titles[activeSection];
-  document.querySelector("#adminPanelEyebrow").textContent = eyebrow;
-  document.querySelector("#adminPanelTitle").textContent = title;
-}
-
-function renderAll() {
-  renderProducts();
-  renderAdminList();
-  renderAdminOrders();
-  renderUser();
-  renderCart();
-  renderFavorites();
-  if (currentProductId) renderProductDetail();
-}
-
-window.addEventListener("hashchange", () => setRoute(location.hash.replace("#", "")));
-
-document.querySelector("#openCart").addEventListener("click", openCart);
-document.querySelector("#closeCart").addEventListener("click", closeCart);
-document.querySelector("#openFavorites").addEventListener("click", openFavorites);
-document.querySelector("#closeFavorites").addEventListener("click", closeFavorites);
-document.querySelectorAll("[data-admin-section]").forEach((button) => {
-  button.addEventListener("click", () => switchAdminSection(button.dataset.adminSection));
-});
-document.querySelector("#detailFavorite").addEventListener("click", () => {
-  if (currentProductId) toggleFavorite(currentProductId);
-});
-document.querySelector("#detailAddToCart").addEventListener("click", () => {
-  if (currentProductId) addToCart(currentProductId);
-});
-cartCepInput.addEventListener("input", () => {
-  cartCepInput.value = formatCep(cartCepInput.value);
-});
-document.querySelector("#calculateShipping").addEventListener("click", calculateShipping);
-document.querySelector("#applyCoupon").addEventListener("click", applyCoupon);
-document.querySelector("#whatsappCheckout").addEventListener("click", openWhatsAppCheckout);
-paymentMethodInput.addEventListener("change", renderPaymentSimulation);
-document.querySelector("#saveReview").addEventListener("click", saveReview);
-cartDrawer.addEventListener("click", (event) => {
-  if (event.target === cartDrawer) closeCart();
-});
-favoritesDrawer.addEventListener("click", (event) => {
-  if (event.target === favoritesDrawer) closeFavorites();
-});
-
-searchInput.addEventListener("input", renderProducts);
-sortProducts.addEventListener("change", renderProducts);
-productGrid.addEventListener("click", (event) => {
-  if (event.target.closest("button, a, input, select, textarea")) return;
-  const card = event.target.closest(".product-card");
-  if (card?.dataset.productId) openProduct(card.dataset.productId);
-});
-relatedProducts.addEventListener("click", (event) => {
-  if (event.target.closest("button, a, input, select, textarea")) return;
-  const card = event.target.closest(".product-card");
-  if (card?.dataset.productId) openProduct(card.dataset.productId);
-});
-document.querySelectorAll(".filter-panel input[type='checkbox']").forEach((input) => {
-  input.addEventListener("change", renderProducts);
-});
-document.querySelector("#clearFilters").addEventListener("click", () => {
-  document.querySelectorAll(".filter-panel input[type='checkbox']").forEach((input) => {
-    input.checked = false;
-  });
-  searchInput.value = "";
-  sortProducts.value = "position";
-  renderProducts();
-});
-document.querySelector("#clearForm").addEventListener("click", clearForm);
-registerCepInput.addEventListener("input", () => {
-  registerCepInput.value = formatCep(registerCepInput.value);
-  setCepMessage("Digite o CEP para preencher o endereco.");
-});
-registerCepInput.addEventListener("blur", searchCepAddress);
-if (productImageInput) productImageInput.addEventListener("change", async () => {
-  try {
-    renderImagePreview(await getProductImageFromForm());
-  } catch (error) {
-    productImageInput.value = "";
-    setFormMessage("#productMessage", error.message, true);
-  }
-});
-if (productExtraImageOneInput) productExtraImageOneInput.addEventListener("change", async () => {
-  try {
-    const imageUrl = await getOptionalProductImage(productExtraImageOneInput, "#productExtraImageOneCurrent");
-    productExtraImageOnePreview.innerHTML = imageUrl ? `<img src="${imageUrl}" alt="Previa extra 1" />` : "Sem imagem extra";
-  } catch (error) {
-    productExtraImageOneInput.value = "";
-    setFormMessage("#productMessage", error.message, true);
-  }
-});
-if (productExtraImageTwoInput) productExtraImageTwoInput.addEventListener("change", async () => {
-  try {
-    const imageUrl = await getOptionalProductImage(productExtraImageTwoInput, "#productExtraImageTwoCurrent");
-    productExtraImageTwoPreview.innerHTML = imageUrl ? `<img src="${imageUrl}" alt="Previa extra 2" />` : "Sem imagem extra";
-  } catch (error) {
-    productExtraImageTwoInput.value = "";
-    setFormMessage("#productMessage", error.message, true);
-  }
-});
-
-productForm.addEventListener("submit", async (event) => {
+async function submitProduct(event) {
   event.preventDefault();
-  const productId = document.querySelector("#productId").value;
-
   try {
-    const formProduct = {
-      name: document.querySelector("#productName").value.trim(),
-      scent: document.querySelector("#productScent").value.trim(),
-      description: document.querySelector("#productDescription").value.trim(),
-      price: Number(document.querySelector("#productPrice").value),
-      stock: Number(document.querySelector("#productStock").value),
-      color: document.querySelector("#productColor").value,
-      size: document.querySelector("#productSize").value,
-      occasion: document.querySelector("#productOccasion").value,
-      mood: document.querySelector("#productMood").value,
-      imageUrl: await getProductImageFromForm(),
-      extraImageUrlOne: await getOptionalProductImage(productExtraImageOneInput, "#productExtraImageOneCurrent"),
-      extraImageUrlTwo: await getOptionalProductImage(productExtraImageTwoInput, "#productExtraImageTwoCurrent"),
+    const product = {
+      name: $("#productName").value.trim(),
+      scent: $("#productScent").value.trim(),
+      description: $("#productDescription").value.trim(),
+      price: Number($("#productPrice").value),
+      stock: Number($("#productStock").value),
+      minimumStock: Number($("#productMinimumStock").value),
+      active: $("#productActive").checked,
+      color: $("#productColor").value,
+      size: $("#productSize").value,
+      occasion: $("#productOccasion").value,
+      mood: $("#productMood").value,
+      imageUrl: await getImage($("#productImage"), "#productImageCurrent"),
+      extraImageUrlOne: await getImage($("#productExtraImageOne"), "#productExtraImageOneCurrent"),
+      extraImageUrlTwo: await getImage($("#productExtraImageTwo"), "#productExtraImageTwoCurrent"),
     };
-    validateProductPayload(formProduct);
-    if (productId) {
-      await apiRequest(`/api/candles/${productId}`, {
-        method: "PUT",
-        authenticated: true,
-        body: JSON.stringify(formProduct),
-      });
-      setFormMessage("#productMessage", "Vela atualizada no banco.");
-    } else {
-      await apiRequest("/api/candles", {
-        method: "POST",
-        authenticated: true,
-        body: JSON.stringify(formProduct),
-      });
-      setFormMessage("#productMessage", "Vela cadastrada no banco.");
-    }
-
+    validateProduct(product);
+    const productId = $("#productId").value;
+    await apiRequest(productId ? `/api/candles/${productId}` : "/api/candles", {
+      method: productId ? "PUT" : "POST",
+      authenticated: true,
+      body: JSON.stringify(product),
+    });
     clearForm();
     await loadProducts({ silent: true });
     renderAll();
-    location.hash = "shop";
+    setFormMessage("#productMessage", productId ? "Vela atualizada." : "Vela cadastrada.");
   } catch (error) {
     setFormMessage("#productMessage", error.message, true);
   }
-});
-
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const email = normalizeEmail(document.querySelector("#loginEmail").value);
-  const password = document.querySelector("#loginPassword").value;
-
-  try {
-    const loggedUser = await apiRequest("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-    if (!loggedUser.token) {
-      throw new Error("Login sem token de seguranca. Verifique a configuracao do backend.");
-    }
-
-    user = {
-      ...loggedUser,
-      role: loggedUser.role || "CUSTOMER",
-      authHeader: `Bearer ${loggedUser.token}`,
-    };
-    writeStorage(storageKeys.user, user);
-    await loadProducts({ silent: true });
-    await loadAccountOrders();
-    await loadAdminOrders();
-    renderUser();
-    setFormMessage("#loginMessage", "Login realizado com sucesso.");
-    location.hash = "shop";
-  } catch (error) {
-    setFormMessage("#loginMessage", error.message, true);
-  }
-});
-
-document.querySelector("#logoutButton").addEventListener("click", () => {
-  logout();
-});
-
-menuLogoutButton.addEventListener("click", () => {
-  logout();
-});
-
-function logout() {
-  user = null;
-  accountOrderHistory = [];
-  adminOrderHistory = [];
-  localStorage.removeItem(storageKeys.user);
-  renderUser();
-  setFormMessage("#loginMessage", "Voce saiu da conta.");
-  location.hash = "login";
 }
 
-registerForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const password = document.querySelector("#registerPassword").value;
-  const passwordConfirm = document.querySelector("#registerPasswordConfirm").value;
-  const email = normalizeEmail(document.querySelector("#registerEmail").value);
+function editProduct(id) {
+  const product = findProduct(id);
+  if (!product) return;
+  $("#productId").value = product.id;
+  $("#productName").value = product.name;
+  $("#productScent").value = product.scent;
+  $("#productPrice").value = product.price;
+  $("#productStock").value = product.stock;
+  $("#productMinimumStock").value = getMinimumStock(product);
+  $("#productActive").checked = product.active !== false;
+  $("#productColor").value = product.color;
+  $("#productSize").value = product.size;
+  $("#productOccasion").value = product.occasion;
+  $("#productMood").value = product.mood;
+  $("#productDescription").value = product.description;
+  $("#productImageCurrent").value = product.imageUrl || "";
+  $("#productExtraImageOneCurrent").value = product.extraImageUrlOne || "";
+  $("#productExtraImageTwoCurrent").value = product.extraImageUrlTwo || "";
+  previewImage($("#productImagePreview"), product.imageUrl);
+  previewImage($("#productExtraImageOnePreview"), product.extraImageUrlOne);
+  previewImage($("#productExtraImageTwoPreview"), product.extraImageUrlTwo);
+  $("#productName").focus();
+}
 
-  if (password !== passwordConfirm) {
-    setFormMessage("#registerMessage", "As senhas precisam ser iguais.", true);
-    return;
-  }
-
-  try {
-    const registerPayload = {
-      name: document.querySelector("#registerName").value.trim(),
-      phone: document.querySelector("#registerPhone").value.trim(),
-      email,
-      password,
-      address: buildRegisterAddress(),
-      acceptsMarketing: document.querySelector("#registerMarketing").checked,
-    };
-
-    const registeredUser = await apiRequest("/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify(registerPayload),
-    });
-    if (!registeredUser.token) {
-      throw new Error("Cadastro sem token de seguranca. Verifique a configuracao do backend.");
-    }
-
-    user = {
-      ...registeredUser,
-      role: registeredUser.role || "CUSTOMER",
-      authHeader: `Bearer ${registeredUser.token}`,
-    };
-    writeStorage(storageKeys.user, user);
-    await loadProducts({ silent: true });
-    registerForm.reset();
-    await loadAccountOrders();
-    await loadAdminOrders();
-    renderUser();
-    setFormMessage("#registerMessage", "Conta criada e salva no banco com sucesso.");
-    location.hash = "shop";
-  } catch (error) {
-    setFormMessage("#registerMessage", error.message, true);
-  }
-});
-
-document.querySelector("#checkoutForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  if (!cart.length) {
-    checkoutMessage.textContent = "Adicione uma vela antes de finalizar.";
-    return;
-  }
-
-  if (!user?.id || !user?.authHeader) {
-    checkoutMessage.textContent = "Entre na sua conta para salvar e finalizar o pedido.";
-    location.hash = "login";
-    return;
-  }
-
-  if (shippingQuote.cost === null) {
-    checkoutMessage.textContent = "Calcule o frete com o CEP antes de finalizar.";
-    return;
-  }
-
-  const address = document.querySelector("#deliveryAddress").value.trim();
-  if (!address) {
-    checkoutMessage.textContent = "Informe o endereco de entrega.";
-    return;
-  }
-
-  const subtotal = getCartSubtotal();
-  const couponDiscount = getCouponDiscount(subtotal);
-  const shippingCost = getShippingCost(subtotal);
-  const payment = document.querySelector("#paymentMethod").value;
-
-  try {
-    const order = await apiRequest("/api/orders", {
-      method: "POST",
-      authenticated: true,
-      body: JSON.stringify({
-        customerId: user.id,
-        deliveryAddress: address,
-        paymentMethod: paymentToApi(payment),
-        couponCode: coupon?.code || "",
-        discountTotal: couponDiscount,
-        shippingCep: shippingQuote.cep,
-        shippingCost,
-        shippingDays: shippingQuote.days,
-        paymentSimulation: payment,
-        items: cart.map((item) => ({
-          productId: Number(item.productId),
-          quantity: item.quantity,
-        })),
-      }),
-    });
-
-    checkoutMessage.textContent = `Pedido #${order.id} confirmado. ${paymentLabel(order.paymentMethod)}, entrega ${shippingCost === 0 ? "gratis" : formatCurrency(shippingCost)} em ${shippingQuote.days} dias uteis.`;
-    cart = [];
-    writeStorage(storageKeys.cart, cart);
-    localStorage.removeItem(storageKeys.shipping);
-    localStorage.removeItem(storageKeys.coupon);
-    shippingQuote = { cep: "", cost: null, days: null };
-    coupon = { code: "", discount: 0, freeShipping: false };
-    await loadProducts({ silent: true });
-    await loadAccountOrders();
-    renderAll();
-  } catch (error) {
-    checkoutMessage.textContent = error.message;
-  }
-});
-
-setRoute(location.hash.replace("#", "") || "shop");
-loadProducts({ silent: true }).finally(async () => {
-  await loadAccountOrders();
-  await loadAdminOrders();
-  renderAll();
-});
-
-async function deleteProductFromApi(productId) {
-  try {
-    await apiRequest(`/api/candles/${productId}`, {
-      method: "DELETE",
-      authenticated: true,
-    });
-    cart = cart.filter((item) => normalizeProductId(item.productId) !== normalizeProductId(productId));
-    favoriteIds = favoriteIds.filter((favoriteId) => normalizeProductId(favoriteId) !== normalizeProductId(productId));
-    writeStorage(storageKeys.cart, cart);
-    writeStorage(storageKeys.favorites, favoriteIds);
-    await loadProducts({ silent: true });
-    renderAll();
-    setFormMessage("#productMessage", "Vela removida do banco.");
-  } catch (error) {
-    setFormMessage("#productMessage", error.message, true);
-  }
+function clearForm() {
+  $("#productForm").reset();
+  $("#productId").value = "";
+  $("#productImageCurrent").value = "";
+  $("#productExtraImageOneCurrent").value = "";
+  $("#productExtraImageTwoCurrent").value = "";
+  $("#productMinimumStock").value = "5";
+  $("#productActive").checked = true;
+  previewImage($("#productImagePreview"), null);
+  previewImage($("#productExtraImageOnePreview"), null);
+  previewImage($("#productExtraImageTwoPreview"), null);
 }
 
 async function toggleProductActive(productId, active) {
   try {
-    await apiRequest(`/api/candles/${productId}/active/${active}`, {
-      method: "PUT",
-      authenticated: true,
-    });
-    setFormMessage("#productMessage", active ? "Vela ativada na loja." : "Vela desativada da loja.");
+    await apiRequest(`/api/candles/${productId}/active/${active}`, { method: "PUT", authenticated: true });
     await loadProducts({ silent: true });
     renderAll();
   } catch (error) {
@@ -1771,15 +1479,111 @@ async function toggleProductActive(productId, active) {
 
 async function updateOrderStatus(orderId, status) {
   try {
-    await apiRequest(`/api/orders/${orderId}/status`, {
-      method: "PUT",
-      authenticated: true,
-      body: JSON.stringify({ status }),
-    });
+    await apiRequest(`/api/orders/${orderId}/status`, { method: "PUT", authenticated: true, body: JSON.stringify({ status }) });
     await loadAdminOrders();
     await loadAccountOrders();
+    renderAll();
   } catch (error) {
     setFormMessage("#productMessage", error.message, true);
   }
 }
 
+async function setRoute(route) {
+  const next = route || "shop";
+  if (next === "admin" && !isAdminPortal) return location.hash = "shop";
+  if (next === "admin" && isAdminPortal && !isAdmin()) return openAdminLogin();
+  if (isAdminPortal && next !== "admin" && next !== "login") return location.hash = isAdmin() ? "admin" : "login";
+  if (next === "account" && !isAuthenticated()) return requestLogin("account", "Entre na sua conta para acessar seus dados.");
+  if (next === "orders" && !isAuthenticated()) return requestLogin("orders", "Entre na sua conta para consultar seus pedidos.");
+  if (next === "review" && (!isAuthenticated() || !currentProductId)) return location.hash = isAuthenticated() ? "orders" : "login";
+  if ((next === "favorites" || next === "profile-edit") && !isAuthenticated()) return requestLogin(next, "Entre na sua conta para continuar.");
+  if (next === "checkout" && !cart.length) return location.hash = "cart";
+  if (next === "checkout" && isAdmin()) return requestCustomerLogin();
+  if (next === "checkout" && !isAuthenticated()) return requestLogin("checkout", "Entre na sua conta para finalizar o pedido.");
+  $$(".screen").forEach((screen) => screen.classList.toggle("active", screen.dataset.screen === next));
+  if (next === "login") renderLoginMode();
+  if (next === "checkout") renderCheckout();
+  if (next === "payment") renderPaymentPage();
+  if (next === "confirmation") renderConfirmationPage();
+  if (next === "product" && currentProductId) renderProductReviews();
+  if (next === "profile-edit") populateProfileForm();
+  if (next === "favorites") renderFavorites();
+  if (next === "admin") {
+    updateAdminAccess();
+    $("#adminOrderStatusFilter").value = "ALL";
+    await refreshAdminOrders();
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderAll() {
+  renderProducts();
+  renderCart();
+  renderUser();
+  renderAdminList();
+  renderAdminOrders();
+  renderAdminCustomers();
+  renderFavorites();
+}
+
+$("#openCart").addEventListener("click", openCart);
+$("#closeCart").addEventListener("click", closeCart);
+$("#goCheckout").addEventListener("click", openCheckoutFromDrawer);
+$("#closeOrder").addEventListener("click", closeOrderFromCart);
+$("#cartDrawer").addEventListener("click", (event) => { if (event.target.id === "cartDrawer") closeCart(); });
+$("#calculateShipping").addEventListener("click", calculateShipping);
+$("#calculateCheckoutShipping").addEventListener("click", searchCheckoutCepAddress);
+$("#calculateCheckoutFreight").addEventListener("click", calculateFreightForCheckout);
+$("#applyCoupon").addEventListener("click", applyCoupon);
+$("#checkoutForm").addEventListener("submit", submitCheckout);
+$("#whatsappCheckout").addEventListener("click", openWhatsAppCheckout);
+$("#loginForm").addEventListener("submit", login);
+$("#logoutButton").addEventListener("click", logout);
+$("#headerLogoutButton").addEventListener("click", logout);
+$("#adminLogoutButton").addEventListener("click", logout);
+$("#registerForm").addEventListener("submit", register);
+$("#registerCep").addEventListener("blur", searchRegisterCep);
+$("#registerStreet").addEventListener("blur", searchCepByRegisterAddress);
+$("#registerCity").addEventListener("blur", searchCepByRegisterAddress);
+$("#registerState").addEventListener("blur", searchCepByRegisterAddress);
+$("#showRegister").addEventListener("click", () => { location.hash = "register"; });
+$("#adminLoginButton").addEventListener("click", openAdminLogin);
+$("#loginLink").addEventListener("click", () => {
+  if (user) return;
+  sessionStorage.removeItem("calorine-after-login");
+  sessionStorage.removeItem("calorine-login-message");
+});
+$("#searchInput").addEventListener("input", renderProducts);
+$("#sortProducts").addEventListener("change", renderProducts);
+$("#clearFilters").addEventListener("click", () => { $$(".filter-panel input").forEach((input) => { input.checked = false; }); renderProducts(); });
+$$(".filter-panel input").forEach((input) => input.addEventListener("change", renderProducts));
+$$("input[name='deliveryChoice']").forEach((input) => input.addEventListener("change", () => setDeliveryChoice(input.value)));
+$$("input[name='paymentChoice']").forEach((input) => input.addEventListener("change", () => { $("#paymentMethod").value = input.value; renderPaymentSimulation(); }));
+$$("[data-admin-section]").forEach((button) => button.addEventListener("click", () => switchAdminSection(button.dataset.adminSection)));
+$("#adminOrderSearch").addEventListener("input", renderAdminOrders);
+$("#adminOrderStatusFilter").addEventListener("change", renderAdminOrders);
+$("#productForm").addEventListener("submit", submitProduct);
+$("#clearForm").addEventListener("click", clearForm);
+$("#detailAddToCart").addEventListener("click", () => { if (currentProductId) addToCart(currentProductId); });
+$("#detailFavorite").addEventListener("click", () => { if (currentProductId) toggleFavorite(currentProductId); });
+$("#detailRatingSummary").addEventListener("click", () => $("#reviewsSection").scrollIntoView({ behavior: "smooth", block: "start" }));
+$("#reviewForm").addEventListener("submit", submitReview);
+$("#reviewPageForm").addEventListener("submit", submitReviewPage);
+$("#profileForm").addEventListener("submit", updateProfile);
+$("#passwordForm").addEventListener("submit", changePassword);
+$("#exportOrders").addEventListener("click", exportOrdersCsv);
+$("#productImage").addEventListener("change", async () => previewImage($("#productImagePreview"), await getImage($("#productImage"), "#productImageCurrent")));
+$("#productExtraImageOne").addEventListener("change", async () => previewImage($("#productExtraImageOnePreview"), await getImage($("#productExtraImageOne"), "#productExtraImageOneCurrent")));
+$("#productExtraImageTwo").addEventListener("change", async () => previewImage($("#productExtraImageTwoPreview"), await getImage($("#productExtraImageTwo"), "#productExtraImageTwoCurrent")));
+
+window.addEventListener("hashchange", () => setRoute(location.hash.replace("#", "") || "shop"));
+$("#menuButton").addEventListener("click", () => document.body.classList.toggle("mobile-menu-open"));
+window.addEventListener("hashchange", () => document.body.classList.remove("mobile-menu-open"));
+window.addEventListener("keydown", (event) => { if (event.key === "Escape") document.body.classList.remove("mobile-menu-open"); });
+
+setRoute(location.hash.replace("#", "") || (isAdminPortal ? "admin" : "shop"));
+loadProducts({ silent: true }).finally(async () => {
+  await loadAccountOrders();
+  await loadAdminOrders();
+  renderAll();
+});

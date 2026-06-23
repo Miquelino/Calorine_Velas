@@ -1,0 +1,2 @@
+ALTER TABLE candle_product ADD COLUMN IF NOT EXISTS minimum_stock INTEGER NOT NULL DEFAULT 5;
+ALTER TABLE customer_orders ADD COLUMN IF NOT EXISTS shipping_service VARCHAR(30);

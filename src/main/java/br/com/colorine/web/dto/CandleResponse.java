@@ -9,6 +9,7 @@ public record CandleResponse(
     String description,
     BigDecimal price,
     int stock,
+    int minimumStock,
     String color,
     String size,
     String occasion,

@@ -13,6 +13,8 @@ public record CandleRequest(
     @NotBlank @Size(max = 180) String description,
     @NotNull @DecimalMin("0.01") BigDecimal price,
     @Min(0) int stock,
+    @Min(0) Integer minimumStock,
+    Boolean active,
     @NotBlank @Size(max = 30) String color,
     @NotBlank @Size(max = 20) String size,
     @NotBlank @Size(max = 30) String occasion,
