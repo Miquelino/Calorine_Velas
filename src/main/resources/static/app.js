@@ -33,10 +33,15 @@ if (isAdminPortal && user?.role !== "ADMIN") {
 }
 let shippingQuote = readStorage(storageKeys.shipping, { cep: "", cost: null, days: null, service: "economico" });
 let coupon = readStorage(storageKeys.coupon, { code: "", discount: 0, freeShipping: false });
+if (coupon?.discount && !coupon.discountTotal) {
+  coupon = { code: "", discountTotal: 0, shippingDiscount: 0, freeShipping: false, message: "" };
+  localStorage.removeItem(storageKeys.coupon);
+}
 let currentProductId = null;
 let accountOrderHistory = [];
 let adminOrderHistory = [];
 let adminOrdersLoadError = "";
+let adminCoupons = [];
 let selectedAdminOrderId = null;
 let lastOrderSnapshot = readStorage(storageKeys.pendingOrder, null);
 let favoriteIds = readStorage(storageKeys.favorites, []);
@@ -199,6 +204,18 @@ async function loadAdminOrders() {
   }
 }
 
+async function loadAdminCoupons() {
+  if (!isAdmin()) {
+    adminCoupons = [];
+    return;
+  }
+  try {
+    adminCoupons = await apiRequest("/api/coupons", { authenticated: true });
+  } catch {
+    adminCoupons = [];
+  }
+}
+
 function findProduct(id) {
   return products.find((product) => normalizeProductId(product.id) === normalizeProductId(id));
 }
@@ -214,8 +231,9 @@ function optionLabel(value) {
     PIX: "Pix",
     CREDIT_CARD: "Cartao de credito",
     BOLETO: "Boleto",
-    PENDING_PAYMENT: "Aguardando pagamento",
+    PENDING: "Pagamento pendente",
     PAID: "Pago",
+    REFUNDED: "Estornado",
     CREATED: "Recebido",
     PREPARING: "Preparando",
     SHIPPED: "Enviado",
@@ -399,8 +417,8 @@ function getCartSubtotal() {
   }, 0);
 }
 
-function getCouponDiscount(subtotal = getCartSubtotal()) {
-  return coupon?.discount ? subtotal * coupon.discount : 0;
+function getCouponDiscount() {
+  return Number(coupon?.discountTotal || 0);
 }
 
 function getShippingCost(subtotal = getCartSubtotal()) {
@@ -610,17 +628,35 @@ function selectShippingService(service) {
   renderCart();
 }
 
-function applyCoupon() {
-  const code = normalizeText($("#couponCode").value).toUpperCase();
-  const coupons = {
-    CALORINE10: { code: "CALORINE10", discount: 0.1, freeShipping: false },
-    FRETEGRATIS: { code: "FRETEGRATIS", discount: 0, freeShipping: true },
-  };
-  coupon = coupons[code] || { code: "", discount: 0, freeShipping: false };
-  if (coupon.code) writeStorage(storageKeys.coupon, coupon);
-  else localStorage.removeItem(storageKeys.coupon);
-  $("#couponMessage").textContent = coupon.code ? "Cupom aplicado." : "Cupom nao encontrado ou removido.";
-  renderCart();
+async function applyCoupon() {
+  const code = $("#couponCode").value.trim().toUpperCase();
+  const subtotal = getCartSubtotal();
+  const shippingCost = shippingQuote.cost === null ? 0 : Number(shippingQuote.cost || 0);
+  try {
+    const result = await apiRequest("/api/coupons/validate", {
+      method: "POST",
+      body: JSON.stringify({ code, subtotal, shippingCost }),
+    });
+    if (!result.valid) {
+      coupon = { code: "", discountTotal: 0, shippingDiscount: 0, freeShipping: false, message: result.message };
+      localStorage.removeItem(storageKeys.coupon);
+      $("#couponMessage").textContent = result.message;
+      renderCart();
+      return;
+    }
+    coupon = {
+      code: result.code,
+      discountTotal: Number(result.discountTotal || 0),
+      shippingDiscount: Number(result.shippingDiscount || 0),
+      freeShipping: Boolean(result.freeShipping),
+      message: result.message,
+    };
+    writeStorage(storageKeys.coupon, coupon);
+    $("#couponMessage").textContent = result.message;
+    renderCart();
+  } catch (error) {
+    $("#couponMessage").textContent = error.message;
+  }
 }
 
 function fillDeliveryAddress(address) {
@@ -769,14 +805,21 @@ async function submitCheckout(event) {
         items: cart.map((item) => ({ productId: Number(item.productId), quantity: item.quantity })),
       }),
     });
-    lastOrderSnapshot = { order, address, payment, totals, shipping: { ...shippingQuote }, items: order.items || [] };
+    const orderSubtotal = (order.items || []).reduce((sum, item) => sum + Number(item.unitPrice || 0) * Number(item.quantity || 0), 0);
+    const orderTotals = {
+      subtotal: orderSubtotal,
+      discount: Number(order.discountTotal || 0),
+      shipping: Number(order.shippingCost || 0),
+      total: Number(order.total || 0),
+    };
+    lastOrderSnapshot = { order, address, payment, totals: orderTotals, shipping: { ...shippingQuote, cost: orderTotals.shipping, days: order.shippingDays, service: order.shippingService }, items: order.items || [] };
     writeStorage(storageKeys.pendingOrder, lastOrderSnapshot);
     cart = [];
     writeStorage(storageKeys.cart, cart);
     localStorage.removeItem(storageKeys.shipping);
     localStorage.removeItem(storageKeys.coupon);
     shippingQuote = { cep: "", cost: null, days: null, service: "economico" };
-    coupon = { code: "", discount: 0, freeShipping: false };
+    coupon = { code: "", discountTotal: 0, shippingDiscount: 0, freeShipping: false, message: "" };
     await loadProducts({ silent: true });
     await loadAccountOrders();
     renderAll();
@@ -840,11 +883,31 @@ async function confirmCurrentPayment() {
 
 function renderConfirmationPage() {
   if (!lastOrderSnapshot) return;
-  const { order, address, totals, shipping } = lastOrderSnapshot;
+  const { order, address, totals, shipping, items = [] } = lastOrderSnapshot;
   $("#confirmationOrderNumber").textContent = `CALORINE-${String(order.id).padStart(5, "0")}`;
   $("#confirmationAddress").textContent = address;
   $("#confirmationShipping").textContent = `${optionLabel(shipping.service)} - ${shipping.days || "-"} dias uteis`;
-  renderSummaryLines($("#confirmationSummary"), totals, { deliveryLabel: totals.shipping === 0 ? "Gratis" : formatCurrency(totals.shipping) });
+  renderSummaryLines($("#confirmationSummary"), totals, {
+    itemCount: items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+    deliveryLabel: totals.shipping === 0 ? "Gratis" : formatCurrency(totals.shipping),
+  });
+  const trackButton = $("#trackConfirmedOrder");
+  if (trackButton) {
+    trackButton.onclick = (event) => {
+      event.preventDefault();
+      openCustomerOrderDetailById(order.id);
+    };
+  }
+}
+
+async function openCustomerOrderDetailById(orderId) {
+  if (!isAuthenticated()) return requestLogin("orders", "Entre na sua conta para acompanhar este pedido.");
+  await loadAccountOrders();
+  renderAll();
+  const order = accountOrderHistory.find((item) => Number(item.id) === Number(orderId));
+  location.hash = "orders";
+  await setRoute("orders");
+  if (order) renderCustomerOrderDetail(order);
 }
 
 function buildWhatsAppMessage() {
@@ -947,6 +1010,7 @@ async function login(event) {
     await loadProducts({ silent: true });
     await loadAccountOrders();
     await loadAdminOrders();
+    await loadAdminCoupons();
     renderAll();
     location.hash = returnRoute;
     sessionStorage.removeItem("calorine-after-login");
@@ -1190,9 +1254,12 @@ async function submitReviewPage(event) {
 function renderCustomerOrderDetail(order) {
   const target = $("#customerOrderDetail");
   target.hidden = false;
-  target.innerHTML = `<div class="customer-detail-head"><div><p class="eyebrow">pedido #${order.id}</p><h2>${optionLabel(order.status)}</h2></div><button class="icon-button" data-close-detail type="button" aria-label="Fechar">×</button></div>${order.status === "PENDING_PAYMENT" ? '<div class="order-payment-pending"><span>O pedido ainda aguarda pagamento.</span><button class="primary-action" data-pay-order type="button">Pagar agora</button></div>' : ""}${order.reviewNotification ? `<div class="order-review-notice">${escapeHtml(order.reviewNotification)}</div>` : ""}<div class="order-progress">${["PENDING_PAYMENT", "PAID", "PREPARING", "SHIPPED", "DELIVERED"].map((status) => `<span class="${status === order.status ? "is-current" : ""}">${optionLabel(status)}</span>`).join("")}</div><div class="customer-detail-grid"><article><span>Entrega</span><strong>${escapeHtml(order.deliveryAddress)}</strong><p>${optionLabel(order.shippingService)} - ${order.shippingDays || "-"} dias</p></article><article><span>Pagamento</span><strong>${optionLabel(order.paymentMethod)}</strong><p>${formatCurrency(order.total)}</p></article></div><div class="admin-detail-items customer-order-items"><h4>Itens</h4>${(order.items || []).map((item) => `<div><span>${item.quantity}x ${escapeHtml(item.productName)}</span><span><strong>${formatCurrency(item.quantity * Number(item.unitPrice || 0))}</strong>${getOrderItemReviewEligibility(order, item) ? `<button class="small-button" data-review-product="${item.productId}" data-review-order="${order.id}" type="button">Avaliar produto</button>` : ""}</span></div>`).join("")}</div>`;
+  const canPay = order.paymentStatus === "PENDING" && order.status !== "CANCELED";
+  const canCustomerCancel = !["CANCELED", "SHIPPED", "DELIVERED"].includes(order.status) && ["PENDING", "PAID"].includes(order.paymentStatus);
+  target.innerHTML = `<div class="customer-detail-head"><div><p class="eyebrow">pedido #${order.id}</p><h2>${optionLabel(order.status)}</h2><p>${optionLabel(order.paymentStatus)}</p></div><button class="icon-button" data-close-detail type="button" aria-label="Fechar">×</button></div>${canPay ? '<div class="order-payment-pending"><span>O pedido ainda aguarda pagamento.</span><button class="primary-action" data-pay-order type="button">Pagar agora</button></div>' : ""}${order.reviewNotification ? `<div class="order-review-notice">${escapeHtml(order.reviewNotification)}</div>` : ""}<div class="order-progress">${["CREATED", "PREPARING", "SHIPPED", "DELIVERED"].map((status) => `<span class="${status === order.status ? "is-current" : ""}">${optionLabel(status)}</span>`).join("")}</div><div class="customer-detail-grid"><article><span>Entrega</span><strong>${escapeHtml(order.deliveryAddress)}</strong><p>${optionLabel(order.shippingService)} - ${order.shippingDays || "-"} dias</p></article><article><span>Pagamento</span><strong>${optionLabel(order.paymentMethod)}</strong><p>${optionLabel(order.paymentStatus)} - ${formatCurrency(order.total)}</p></article></div><div class="admin-detail-items customer-order-items"><h4>Itens</h4>${(order.items || []).map((item) => `<div><span>${item.quantity}x ${escapeHtml(item.productName)}</span><span><strong>${formatCurrency(item.quantity * Number(item.unitPrice || 0))}</strong>${getOrderItemReviewEligibility(order, item) ? `<button class="small-button" data-review-product="${item.productId}" data-review-order="${order.id}" type="button">Avaliar produto</button>` : ""}</span></div>`).join("")}</div>${canCustomerCancel ? `<button class="secondary-action" data-cancel-order="${order.id}" type="button">Cancelar pedido</button>` : ""}`;
   target.querySelector("[data-close-detail]").addEventListener("click", () => { target.hidden = true; });
   target.querySelector("[data-pay-order]")?.addEventListener("click", () => resumeOrderPayment(order));
+  target.querySelector("[data-cancel-order]")?.addEventListener("click", () => cancelOrder(order.id, { context: "customer" }));
   target.querySelectorAll("[data-review-product]").forEach((button) => button.addEventListener("click", () => startProductReview(button.dataset.reviewProduct, button.dataset.reviewOrder)));
   target.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -1215,24 +1282,27 @@ function resumeOrderPayment(order) {
 
 function renderAdminDashboard() {
   const orders = getCommerceAdminOrders();
-  const sales = orders.filter((order) => !["PENDING_PAYMENT", "CREATED", "CANCELED"].includes(order.status)).reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const paidOrders = orders.filter((order) => order.paymentStatus === "PAID" && order.status !== "CANCELED");
+  const sales = paidOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
   $("#adminTotalOrders").textContent = orders.length;
   $("#adminTotalSales").textContent = formatCurrency(sales);
   $("#adminActiveProducts").textContent = products.filter((product) => product.active !== false).length;
   $("#adminLowStock").textContent = products.filter((product) => product.active !== false && Number(product.stock) <= getMinimumStock(product)).length;
+  $("#adminAverageTicket").textContent = formatCurrency(paidOrders.length ? sales / paidOrders.length : 0);
   renderAdminSalesChart(orders);
+  renderAdminTopProducts(orders);
   $("#adminDashboardMessage").textContent = adminOrdersLoadError;
   $("#adminDashboardMessage").hidden = !adminOrdersLoadError;
 }
 
 function renderAdminSalesChart(orders) {
-  const statuses = ["PENDING_PAYMENT", "PAID", "CREATED", "PREPARING", "SHIPPED", "DELIVERED", "CANCELED"];
+  const statuses = ["CREATED", "PREPARING", "SHIPPED", "DELIVERED", "CANCELED"];
   const maximum = Math.max(1, ...statuses.map((status) => orders.filter((order) => order.status === status).length));
   $("#adminSalesChart").innerHTML = statuses.map((status) => { const count = orders.filter((order) => order.status === status).length; return `<div><span>${optionLabel(status)}</span><i style="--bar:${Math.round((count / maximum) * 100)}%"></i><strong>${count}</strong></div>`; }).join("");
 }
 
 function exportOrdersCsv() {
-  const rows = [["Pedido", "Data", "Cliente", "E-mail", "Status", "Pagamento", "Total"], ...getFilteredAdminOrders().map((order) => [order.id, formatDate(order.createdAt), order.customerName, order.customerEmail, optionLabel(order.status), optionLabel(order.paymentMethod), Number(order.total || 0).toFixed(2)])];
+  const rows = [["Pedido", "Data", "Cliente", "E-mail", "Telefone", "Entrega", "Pagamento", "Forma", "Endereco", "Cupom", "Desconto", "Frete", "Total"], ...getFilteredAdminOrders().map((order) => [order.id, formatDate(order.createdAt), order.customerName, order.customerEmail, order.customerPhone, optionLabel(order.status), optionLabel(order.paymentStatus), optionLabel(order.paymentMethod), order.deliveryAddress, order.couponCode, Number(order.discountTotal || 0).toFixed(2), Number(order.shippingCost || 0).toFixed(2), Number(order.total || 0).toFixed(2)])];
   const csv = rows.map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(";")).join("\n");
   const link = document.createElement("a");
   link.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
@@ -1242,13 +1312,41 @@ function exportOrdersCsv() {
 }
 
 function getCommerceAdminOrders() {
+  return adminOrderHistory;
+}
+
+function getAdminCustomerOrders() {
   const adminEmail = user?.role === "ADMIN" ? normalizeText(user.email) : "";
   return adminOrderHistory.filter((order) => !adminEmail || normalizeText(order.customerEmail) !== adminEmail);
+}
+
+function setAdminMessage(message, isError = false) {
+  const target = $("#adminDashboardMessage");
+  if (!target) return;
+  target.textContent = message || "";
+  target.hidden = !message;
+  target.classList.toggle("error", Boolean(isError));
 }
 
 function renderAdminStockAlerts() {
   const low = products.filter((product) => product.active !== false && Number(product.stock) <= getMinimumStock(product)).slice(0, 4);
   $("#adminStockAlerts").innerHTML = low.length ? low.map((product) => `<article class="admin-item"><div><h3>${product.name}</h3><p>${product.stock} em estoque - minimo ${getMinimumStock(product)}</p></div><span class="status-pill is-muted">Repor</span></article>`).join("") : '<p class="empty-state">Nenhum produto com estoque baixo.</p>';
+}
+
+function renderAdminTopProducts(orders = getCommerceAdminOrders()) {
+  const totals = new Map();
+  orders.filter((order) => order.status !== "CANCELED").forEach((order) => {
+    (order.items || []).forEach((item) => {
+      const current = totals.get(item.productId) || { name: item.productName, quantity: 0, total: 0 };
+      current.quantity += Number(item.quantity || 0);
+      current.total += Number(item.unitPrice || 0) * Number(item.quantity || 0);
+      totals.set(item.productId, current);
+    });
+  });
+  const best = [...totals.values()].sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+  $("#adminTopProducts").innerHTML = best.length
+    ? best.map((item) => `<article class="admin-item"><div><h3>${escapeHtml(item.name)}</h3><p>${item.quantity} unidade(s) vendidas</p></div><strong>${formatCurrency(item.total)}</strong></article>`).join("")
+    : '<p class="empty-state">Nenhuma venda registrada ainda.</p>';
 }
 
 function getFilteredAdminOrders() {
@@ -1266,26 +1364,53 @@ function renderAdminOrders() {
   if (adminOrdersLoadError) {
     $("#adminOrders").innerHTML = `<div class="admin-load-error"><strong>Pedidos indisponiveis</strong><p>${escapeHtml(adminOrdersLoadError)}</p><button class="small-button" data-reload-admin-orders type="button">Tentar novamente</button></div>`;
     $("#adminOrders [data-reload-admin-orders]").addEventListener("click", refreshAdminOrders);
-    renderAdminOrderDetail(null);
     $("#adminRecentOrders").innerHTML = `<p class="admin-load-error">${escapeHtml(adminOrdersLoadError)}</p>`;
     return;
   }
   if (!orders.length) {
     $("#adminOrders").innerHTML = '<p class="empty-state">Nenhum pedido encontrado.</p>';
-    renderAdminOrderDetail(null);
   } else {
-    if (!selectedAdminOrderId || !orders.some((order) => order.id === selectedAdminOrderId)) selectedAdminOrderId = orders[0].id;
     $("#adminOrders").innerHTML = "";
     orders.forEach((order) => {
       const item = document.createElement("article");
-      item.className = `admin-order-card ${order.id === selectedAdminOrderId ? "is-selected" : ""}`;
-      item.innerHTML = `<div><h3>Pedido #${order.id} - ${order.customerName}</h3><p>${formatDate(order.createdAt)} - ${optionLabel(order.paymentMethod)} - ${formatCurrency(order.total)}</p><p>${order.customerEmail || ""}</p></div><div class="admin-actions"><span class="status-pill">${optionLabel(order.status)}</span><button class="small-button" type="button">Detalhes</button></div>`;
-      item.querySelector("button").addEventListener("click", () => { selectedAdminOrderId = order.id; renderAdminOrders(); });
+      item.className = "admin-order-card";
+      item.innerHTML = `
+        <div class="admin-order-summary">
+          <p class="eyebrow">pedido #${order.id}</p>
+          <h3>${escapeHtml(order.customerName)}</h3>
+          <p>${formatDate(order.createdAt)} - ${optionLabel(order.paymentMethod)} - ${formatCurrency(order.total)}</p>
+          <p>${order.customerEmail || ""}</p>
+          <p>Telefone: ${order.customerPhone || "-"}</p>
+        </div>
+        <div class="admin-actions admin-order-state">
+          <span class="status-pill"><small>Pagamento</small>${optionLabel(order.paymentStatus)}</span>
+          <span class="status-pill"><small>Andamento</small>${optionLabel(order.status)}</span>
+        </div>`;
+      item.tabIndex = 0;
+      item.setAttribute("role", "button");
+      item.setAttribute("aria-label", `Abrir pedido ${order.id}`);
+      const openDetail = () => {
+        selectedAdminOrderId = order.id;
+        renderAdminOrderDetail(order);
+        switchAdminSection("order-detail");
+      };
+      item.addEventListener("click", openDetail);
+      item.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openDetail();
+        }
+      });
       $("#adminOrders").append(item);
     });
-    renderAdminOrderDetail(orders.find((order) => order.id === selectedAdminOrderId));
   }
-  $("#adminRecentOrders").innerHTML = getCommerceAdminOrders().slice(0, 4).map((order) => `<article class="admin-order-card"><div><h3>Pedido #${order.id}</h3><p>${order.customerName} - ${formatCurrency(order.total)}</p></div><span class="status-pill">${optionLabel(order.status)}</span></article>`).join("") || '<p class="empty-state">Nenhum pedido recebido ainda.</p>';
+  $("#adminRecentOrders").innerHTML = getCommerceAdminOrders().slice(0, 4).map((order) => `<article class="admin-order-card"><div class="admin-order-summary"><p class="eyebrow">pedido #${order.id}</p><h3>${escapeHtml(order.customerName)}</h3><p>${formatCurrency(order.total)}</p></div><div class="admin-actions admin-order-state"><span class="status-pill"><small>Pagamento</small>${optionLabel(order.paymentStatus)}</span><span class="status-pill"><small>Andamento</small>${optionLabel(order.status)}</span></div></article>`).join("") || '<p class="empty-state">Nenhum pedido recebido ainda.</p>';
+}
+
+function getAllowedAdminStatuses(order) {
+  if (!order || ["CANCELED", "DELIVERED"].includes(order.status) || order.paymentStatus !== "PAID") return [order?.status].filter(Boolean);
+  const next = { CREATED: "PREPARING", PREPARING: "SHIPPED", SHIPPED: "DELIVERED" }[order.status];
+  return next ? [order.status, next] : [order.status];
 }
 
 function renderAdminOrderDetail(order) {
@@ -1294,23 +1419,72 @@ function renderAdminOrderDetail(order) {
     return;
   }
   const subtotal = (order.items || []).reduce((sum, item) => sum + Number(item.unitPrice || 0) * item.quantity, 0);
+  const statusOptions = getAllowedAdminStatuses(order);
+  const canAdvance = statusOptions.length > 1;
+  const canConfirmPayment = order.paymentStatus === "PENDING" && order.status === "CREATED";
+  const hasInvalidPaymentFlow = order.paymentStatus === "PENDING" && !["CREATED", "CANCELED"].includes(order.status);
+  const canCancel = order.status !== "CANCELED" && !["SHIPPED", "DELIVERED"].includes(order.status);
   $("#adminOrderDetail").innerHTML = `
-    <div class="admin-detail-head"><div><p class="eyebrow">pedido #${order.id}</p><h3>${order.customerName}</h3><p>${formatDate(order.createdAt)}</p></div><label>Status<select data-order-status="${order.id}">${["PENDING_PAYMENT", "PAID", "CREATED", "PREPARING", "SHIPPED", "DELIVERED", "CANCELED"].map((status) => `<option value="${status}" ${order.status === status ? "selected" : ""}>${optionLabel(status)}</option>`).join("")}</select></label></div>
+    <div class="admin-detail-head"><div><p class="eyebrow">pedido #${order.id}</p><h3>${order.customerName}</h3><p>${formatDate(order.createdAt)}</p><p><strong>Pagamento:</strong> ${optionLabel(order.paymentStatus)} · <strong>Andamento:</strong> ${optionLabel(order.status)}</p></div><label>Andamento<select data-order-status="${order.id}" ${canAdvance ? "" : "disabled"}>${statusOptions.map((status) => `<option value="${status}" ${order.status === status ? "selected" : ""}>${optionLabel(status)}</option>`).join("")}</select></label></div>
+    <div class="admin-order-actions">
+      ${canConfirmPayment ? `<button class="primary-action" data-admin-confirm-payment="${order.id}" type="button">Confirmar pagamento</button>` : ""}
+      ${canCancel ? `<button class="secondary-action" data-admin-cancel-order="${order.id}" type="button">Cancelar pedido</button>` : ""}
+      <button class="secondary-action" data-admin-print-order="${order.id}" type="button">Imprimir/separar pedido</button>
+    </div>
     <div class="admin-detail-grid">
       <article><span>Cliente</span><strong>${order.customerEmail || "-"}</strong><p>${order.customerPhone || "-"}</p></article>
-      <article><span>Pagamento</span><strong>${optionLabel(order.paymentMethod)}</strong><p>${order.paymentSimulation || "Simulado"}</p></article>
+      <article><span>Pagamento</span><strong>${optionLabel(order.paymentStatus)}</strong><p>${optionLabel(order.paymentMethod)} - ${order.paymentSimulation || "Simulado"}</p></article>
       <article><span>Entrega</span><strong>${order.shippingCep || "-"}</strong><p>${order.deliveryAddress || "-"}</p><p>${optionLabel(order.shippingService)} - ${order.shippingDays || "-"} dias - ${formatCurrency(order.shippingCost)}</p></article>
-      <article><span>Resumo</span><strong>${formatCurrency(order.total)}</strong><p>Subtotal ${formatCurrency(subtotal)}</p></article>
+      <article><span>Resumo</span><strong>${formatCurrency(order.total)}</strong><p>Subtotal ${formatCurrency(subtotal)}</p><p>Desconto ${formatCurrency(order.discountTotal)}</p><p>Cupom ${order.couponCode || "-"}</p></article>
     </div>
     <div class="admin-detail-items"><h4>Itens</h4>${(order.items || []).map((item) => `<div><span>${item.quantity}x ${item.productName}</span><strong>${formatCurrency(item.quantity * Number(item.unitPrice || 0))}</strong></div>`).join("")}</div>
+    <div class="admin-order-history"><h4>Historico do pedido</h4>${(order.events || []).length ? order.events.map((event) => `<article><span>${formatDate(event.createdAt)}</span><strong>${escapeHtml(event.title)}</strong><p>${escapeHtml(event.description)}</p></article>`).join("") : '<p class="empty-state">Historico sera registrado nas proximas movimentacoes.</p>'}</div>
     <p class="hint-text">${order.emailNotification || ""}</p>
   `;
-  $("#adminOrderDetail select").addEventListener("change", (event) => updateOrderStatus(order.id, event.target.value));
+  $("#adminOrderDetail select")?.addEventListener("change", (event) => updateOrderStatus(order.id, event.target.value));
+  $("#adminOrderDetail [data-admin-confirm-payment]")?.addEventListener("click", () => confirmAdminPayment(order.id));
+  $("#adminOrderDetail [data-admin-cancel-order]")?.addEventListener("click", () => cancelOrder(order.id, { context: "admin-detail" }));
+  $("#adminOrderDetail [data-admin-print-order]")?.addEventListener("click", () => printOrderPickingList(order));
+}
+
+function renderAdminOrderDetail(order) {
+  if (!order) {
+    $("#adminOrderDetail").innerHTML = '<p class="empty-state">Selecione um pedido.</p>';
+    return;
+  }
+  const subtotal = (order.items || []).reduce((sum, item) => sum + Number(item.unitPrice || 0) * item.quantity, 0);
+  const statusOptions = getAllowedAdminStatuses(order);
+  const canAdvance = statusOptions.length > 1;
+  const canConfirmPayment = order.paymentStatus === "PENDING" && order.status === "CREATED";
+  const hasInvalidPaymentFlow = order.paymentStatus === "PENDING" && !["CREATED", "CANCELED"].includes(order.status);
+  const canCancel = order.status !== "CANCELED" && !["SHIPPED", "DELIVERED"].includes(order.status);
+  $("#adminOrderDetail").innerHTML = `
+    <div class="admin-detail-head"><div><p class="eyebrow">pedido #${order.id}</p><h3>${escapeHtml(order.customerName)}</h3><p>${formatDate(order.createdAt)}</p><p><strong>Pagamento:</strong> ${optionLabel(order.paymentStatus)} - <strong>Andamento:</strong> ${optionLabel(order.status)}</p></div><label>Andamento<select data-order-status="${order.id}" ${canAdvance ? "" : "disabled"}>${statusOptions.map((status) => `<option value="${status}" ${order.status === status ? "selected" : ""}>${optionLabel(status)}</option>`).join("")}</select></label></div>
+    ${hasInvalidPaymentFlow ? `<p class="admin-flow-warning">Pedido com andamento avancado e pagamento pendente. Confira o historico antes de seguir.</p>` : ""}
+    <div class="admin-order-actions">
+      ${canConfirmPayment ? `<button class="primary-action" data-admin-confirm-payment="${order.id}" type="button">Confirmar pagamento</button>` : ""}
+      ${canCancel ? `<button class="secondary-action" data-admin-cancel-order="${order.id}" type="button">Cancelar pedido</button>` : ""}
+      <button class="secondary-action" data-admin-print-order="${order.id}" type="button">Imprimir/separar pedido</button>
+    </div>
+    <div class="admin-detail-grid">
+      <article><span>Cliente</span><strong>${order.customerEmail || "-"}</strong><p>${order.customerPhone || "-"}</p></article>
+      <article><span>Pagamento</span><strong>${optionLabel(order.paymentStatus)}</strong><p>${optionLabel(order.paymentMethod)} - ${order.paymentSimulation || "Simulado"}</p></article>
+      <article><span>Entrega</span><strong>${order.shippingCep || "-"}</strong><p>${order.deliveryAddress || "-"}</p><p>${optionLabel(order.shippingService)} - ${order.shippingDays || "-"} dias - ${formatCurrency(order.shippingCost)}</p></article>
+      <article><span>Resumo</span><strong>${formatCurrency(order.total)}</strong><p>Subtotal ${formatCurrency(subtotal)}</p><p>Desconto ${formatCurrency(order.discountTotal)}</p><p>Cupom ${order.couponCode || "-"}</p></article>
+    </div>
+    <div class="admin-detail-items"><h4>Itens</h4>${(order.items || []).map((item) => `<div><span>${item.quantity}x ${escapeHtml(item.productName)}</span><strong>${formatCurrency(item.quantity * Number(item.unitPrice || 0))}</strong></div>`).join("")}</div>
+    <div class="admin-order-history"><h4>Historico do pedido</h4>${(order.events || []).length ? order.events.map((event) => `<article><time>${formatDate(event.createdAt)}</time><div><strong>${escapeHtml(event.title)}</strong><p>${escapeHtml(event.description)}</p></div></article>`).join("") : '<p class="empty-state">Historico sera registrado nas proximas movimentacoes.</p>'}</div>
+    <p class="hint-text">${order.emailNotification || ""}</p>
+  `;
+  $("#adminOrderDetail select")?.addEventListener("change", (event) => updateOrderStatus(order.id, event.target.value));
+  $("#adminOrderDetail [data-admin-confirm-payment]")?.addEventListener("click", () => confirmAdminPayment(order.id));
+  $("#adminOrderDetail [data-admin-cancel-order]")?.addEventListener("click", () => cancelOrder(order.id, { context: "admin-detail" }));
+  $("#adminOrderDetail [data-admin-print-order]")?.addEventListener("click", () => printOrderPickingList(order));
 }
 
 function renderAdminCustomers() {
   const customers = new Map();
-  getCommerceAdminOrders().forEach((order) => {
+  getAdminCustomerOrders().forEach((order) => {
     const key = order.customerEmail || order.customerName;
     const current = customers.get(key) || { name: order.customerName, email: order.customerEmail, orders: 0, total: 0 };
     current.orders += 1;
@@ -1320,10 +1494,88 @@ function renderAdminCustomers() {
   $("#adminCustomers").innerHTML = [...customers.values()].map((customer) => `<article class="admin-item"><div><h3>${customer.name}</h3><p>${customer.email || "E-mail nao informado"}</p><p>${customer.orders} pedido(s)</p></div><strong>${formatCurrency(customer.total)}</strong></article>`).join("") || '<p class="empty-state">Nenhum cliente com pedido ainda.</p>';
 }
 
+function renderAdminCoupons() {
+  $("#adminCoupons").innerHTML = adminCoupons.length ? adminCoupons.map((couponItem) => {
+    const usage = couponItem.usageLimit ? `${couponItem.usedCount}/${couponItem.usageLimit}` : `${couponItem.usedCount} uso(s)`;
+    return `
+      <article class="admin-item">
+        <div>
+          <h3>${escapeHtml(couponItem.code)}</h3>
+          <p>${couponTypeLabel(couponItem.type)} - valor ${formatCouponValue(couponItem)}</p>
+          <p>Minimo ${formatCurrency(couponItem.minimumSubtotal)} - Uso ${usage}${couponItem.validUntil ? ` - ate ${couponItem.validUntil}` : ""}</p>
+          <span class="status-pill ${couponItem.active ? "is-active" : "is-muted"}">${couponItem.active ? "Ativo" : "Inativo"}</span>
+        </div>
+        <div class="admin-actions"><button class="small-button" data-edit-coupon="${couponItem.id}" type="button">Editar</button></div>
+      </article>`;
+  }).join("") : '<p class="empty-state">Nenhum cupom cadastrado.</p>';
+  $$("[data-edit-coupon]").forEach((button) => button.addEventListener("click", () => editCoupon(button.dataset.editCoupon)));
+}
+
+function couponTypeLabel(type) {
+  return { PERCENTAGE: "Percentual", FIXED_AMOUNT: "Valor fixo", FREE_SHIPPING: "Frete gratis" }[type] || type;
+}
+
+function formatCouponValue(couponItem) {
+  if (couponItem.type === "PERCENTAGE") return `${Number(couponItem.value || 0).toFixed(0)}%`;
+  if (couponItem.type === "FREE_SHIPPING") return "frete";
+  return formatCurrency(couponItem.value);
+}
+
+function editCoupon(id) {
+  const couponItem = adminCoupons.find((item) => Number(item.id) === Number(id));
+  if (!couponItem) return;
+  $("#couponId").value = couponItem.id;
+  $("#adminCouponCode").value = couponItem.code;
+  $("#adminCouponType").value = couponItem.type;
+  $("#adminCouponValue").value = couponItem.value;
+  $("#adminCouponMinimum").value = couponItem.minimumSubtotal;
+  $("#adminCouponLimit").value = couponItem.usageLimit || "1";
+  $("#adminCouponValidUntil").value = couponItem.validUntil || "";
+  $("#adminCouponActive").checked = couponItem.active;
+  switchAdminSection("coupon-create");
+  $("#adminCouponCode").focus();
+}
+
+function clearCouponForm() {
+  $("#couponForm").reset();
+  $("#couponId").value = "";
+  $("#adminCouponValue").value = "10";
+  $("#adminCouponMinimum").value = "0";
+  $("#adminCouponLimit").value = "1";
+  $("#adminCouponActive").checked = true;
+}
+
+async function submitCoupon(event) {
+  event.preventDefault();
+  try {
+    const payload = {
+      code: $("#adminCouponCode").value.trim().toUpperCase(),
+      type: $("#adminCouponType").value,
+      value: Number($("#adminCouponValue").value || 0),
+      minimumSubtotal: Number($("#adminCouponMinimum").value || 0),
+      usageLimit: Number($("#adminCouponLimit").value || 1),
+      validUntil: $("#adminCouponValidUntil").value || null,
+      active: $("#adminCouponActive").checked,
+    };
+    const id = $("#couponId").value;
+    await apiRequest(id ? `/api/coupons/${id}` : "/api/coupons", {
+      method: id ? "PUT" : "POST",
+      authenticated: true,
+      body: JSON.stringify(payload),
+    });
+    clearCouponForm();
+    await loadAdminCoupons();
+    renderAdminCoupons();
+    setFormMessage("#couponAdminMessage", id ? "Cupom atualizado." : "Cupom cadastrado.");
+  } catch (error) {
+    setFormMessage("#couponAdminMessage", error.message, true);
+  }
+}
+
 function renderAdminList() {
   $("#adminList").innerHTML = products.map((product) => `
-    <article class="admin-item">
-      <div><h3>${product.name}</h3><p>${product.scent} - ${product.size} - ${formatCurrency(product.price)} - ${product.stock} em estoque</p><p>Estoque minimo: ${getMinimumStock(product)}</p><span class="status-pill ${product.active ? "is-active" : "is-muted"}">${product.active ? "Ativa" : "Oculta"}</span></div>
+    <article class="admin-item ${Number(product.stock || 0) <= 5 ? "is-low-stock" : ""}">
+      <div><h3>${product.name}</h3><p>${product.scent} - ${product.size} - ${formatCurrency(product.price)} - <strong>${product.stock} em estoque</strong></p><p>Estoque minimo: ${getMinimumStock(product)}</p><div class="product-admin-badges">${Number(product.stock || 0) <= 5 ? '<span class="stock-alert-badge">Estoque baixo</span>' : ""}<span class="status-pill ${product.active ? "is-active" : "is-muted"}">${product.active ? "Ativa" : "Oculta"}</span></div></div>
       <div class="admin-actions"><button class="small-button" data-edit="${product.id}">Editar</button><button class="small-button" data-toggle="${product.id}">${product.active ? "Desativar" : "Ativar"}</button></div>
     </article>`).join("") || '<p class="empty-state">Cadastre a primeira vela.</p>';
   $$("[data-edit]").forEach((button) => button.addEventListener("click", () => editProduct(button.dataset.edit)));
@@ -1347,6 +1599,14 @@ async function switchAdminSection(section) {
     if (section === "orders") $("#adminOrderStatusFilter").value = "ALL";
     await refreshAdminOrders();
   }
+  if ((section === "coupons" || section === "coupon-create") && isAdmin()) {
+    await loadAdminCoupons();
+    renderAdminCoupons();
+  }
+  if (section === "customers" && isAdmin()) renderAdminCustomers();
+  if (section === "product-create") $("#productName")?.focus();
+  if (section === "coupon-create") $("#adminCouponCode")?.focus();
+  $$(".admin-sidebar button[data-admin-section]").forEach((button) => button.classList.toggle("active", button.dataset.adminSection === section));
 }
 
 async function refreshAdminOrders() {
@@ -1369,8 +1629,29 @@ async function getImage(input, currentSelector) {
   const file = input.files[0];
   if (!file) return $(currentSelector).value || null;
   if (!file.type.startsWith("image/")) throw new Error("Selecione uma imagem valida.");
-  if (file.size > 2 * 1024 * 1024) throw new Error("Escolha uma imagem com ate 2 MB.");
-  return fileToDataUrl(file);
+  if (file.size > 3 * 1024 * 1024) throw new Error("Escolha uma imagem com ate 3 MB.");
+  return uploadProductImage(file);
+}
+
+async function uploadProductImage(file) {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(`${apiBase}/api/uploads/images`, {
+    method: "POST",
+    headers: authHeader(),
+    body: form,
+  });
+  if (!response.ok) {
+    let message = "Nao foi possivel salvar a imagem.";
+    try {
+      message = (await response.json()).message || message;
+    } catch {
+      message = await response.text() || message;
+    }
+    throw new Error(message);
+  }
+  const payload = await response.json();
+  return payload.url;
 }
 
 function previewImage(target, url, text = "Sem imagem") {
@@ -1451,6 +1732,7 @@ function editProduct(id) {
   previewImage($("#productImagePreview"), product.imageUrl);
   previewImage($("#productExtraImageOnePreview"), product.extraImageUrlOne);
   previewImage($("#productExtraImageTwoPreview"), product.extraImageUrlTwo);
+  switchAdminSection("product-create");
   $("#productName").focus();
 }
 
@@ -1480,12 +1762,74 @@ async function toggleProductActive(productId, active) {
 async function updateOrderStatus(orderId, status) {
   try {
     await apiRequest(`/api/orders/${orderId}/status`, { method: "PUT", authenticated: true, body: JSON.stringify({ status }) });
+    await loadProducts({ silent: true });
     await loadAdminOrders();
     await loadAccountOrders();
     renderAll();
+    setAdminMessage(status === "CANCELED" ? "Pedido cancelado." : "Status atualizado.");
   } catch (error) {
-    setFormMessage("#productMessage", error.message, true);
+    setAdminMessage(error.message, true);
   }
+}
+
+async function cancelOrder(orderId, options = {}) {
+  try {
+    try {
+      await apiRequest(`/api/orders/${orderId}/cancel`, { method: "PUT", authenticated: true });
+    } catch (error) {
+      if (error.status !== 404 && !/404|not found|encontrado/i.test(error.message)) throw error;
+      await apiRequest(`/api/orders/${orderId}/status`, { method: "PUT", authenticated: true, body: JSON.stringify({ status: "CANCELED" }) });
+    }
+    await loadProducts({ silent: true });
+    await loadAdminOrders();
+    await loadAccountOrders();
+    renderAll();
+    const updatedOrder = accountOrderHistory.find((order) => Number(order.id) === Number(orderId))
+      || adminOrderHistory.find((order) => Number(order.id) === Number(orderId));
+    if (options.context === "customer" && updatedOrder) {
+      renderCustomerOrderDetail(updatedOrder);
+    }
+    if (options.context === "admin-detail" && updatedOrder) {
+      renderAdminOrderDetail(updatedOrder);
+      switchAdminSection("order-detail");
+    }
+    if (options.context !== "customer") setAdminMessage("Pedido cancelado.");
+  } catch (error) {
+    if (options.context === "customer") {
+      alert(error.message);
+    } else {
+      setAdminMessage(error.message, true);
+    }
+  }
+}
+
+async function confirmAdminPayment(orderId) {
+  try {
+    await apiRequest(`/api/orders/${orderId}/payment/confirm`, { method: "PUT", authenticated: true });
+    await refreshAdminOrders();
+    setAdminMessage("Pagamento confirmado.");
+  } catch (error) {
+    setAdminMessage(error.message, true);
+  }
+}
+
+function printOrderPickingList(order) {
+  const lines = [
+    `Pedido #${order.id}`,
+    `Cliente: ${order.customerName}`,
+    `Telefone: ${order.customerPhone || "-"}`,
+    `Entrega: ${order.deliveryAddress}`,
+    "",
+    "Itens:",
+    ...(order.items || []).map((item) => `- ${item.quantity}x ${item.productName}`),
+    "",
+    `Total: ${formatCurrency(order.total)}`,
+  ];
+  const printWindow = window.open("", "_blank", "width=720,height=720");
+  if (!printWindow) return;
+  printWindow.document.write(`<pre style="font:16px/1.5 Arial, sans-serif; white-space:pre-wrap">${escapeHtml(lines.join("\n"))}</pre>`);
+  printWindow.document.close();
+  printWindow.print();
 }
 
 async function setRoute(route) {
@@ -1523,6 +1867,7 @@ function renderAll() {
   renderAdminList();
   renderAdminOrders();
   renderAdminCustomers();
+  renderAdminCoupons();
   renderFavorites();
 }
 
@@ -1564,6 +1909,8 @@ $("#adminOrderSearch").addEventListener("input", renderAdminOrders);
 $("#adminOrderStatusFilter").addEventListener("change", renderAdminOrders);
 $("#productForm").addEventListener("submit", submitProduct);
 $("#clearForm").addEventListener("click", clearForm);
+$("#couponForm").addEventListener("submit", submitCoupon);
+$("#clearCouponForm").addEventListener("click", clearCouponForm);
 $("#detailAddToCart").addEventListener("click", () => { if (currentProductId) addToCart(currentProductId); });
 $("#detailFavorite").addEventListener("click", () => { if (currentProductId) toggleFavorite(currentProductId); });
 $("#detailRatingSummary").addEventListener("click", () => $("#reviewsSection").scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -1572,9 +1919,9 @@ $("#reviewPageForm").addEventListener("submit", submitReviewPage);
 $("#profileForm").addEventListener("submit", updateProfile);
 $("#passwordForm").addEventListener("submit", changePassword);
 $("#exportOrders").addEventListener("click", exportOrdersCsv);
-$("#productImage").addEventListener("change", async () => previewImage($("#productImagePreview"), await getImage($("#productImage"), "#productImageCurrent")));
-$("#productExtraImageOne").addEventListener("change", async () => previewImage($("#productExtraImageOnePreview"), await getImage($("#productExtraImageOne"), "#productExtraImageOneCurrent")));
-$("#productExtraImageTwo").addEventListener("change", async () => previewImage($("#productExtraImageTwoPreview"), await getImage($("#productExtraImageTwo"), "#productExtraImageTwoCurrent")));
+$("#productImage").addEventListener("change", async () => previewImage($("#productImagePreview"), $("#productImage").files[0] ? await fileToDataUrl($("#productImage").files[0]) : $("#productImageCurrent").value));
+$("#productExtraImageOne").addEventListener("change", async () => previewImage($("#productExtraImageOnePreview"), $("#productExtraImageOne").files[0] ? await fileToDataUrl($("#productExtraImageOne").files[0]) : $("#productExtraImageOneCurrent").value));
+$("#productExtraImageTwo").addEventListener("change", async () => previewImage($("#productExtraImageTwoPreview"), $("#productExtraImageTwo").files[0] ? await fileToDataUrl($("#productExtraImageTwo").files[0]) : $("#productExtraImageTwoCurrent").value));
 
 window.addEventListener("hashchange", () => setRoute(location.hash.replace("#", "") || "shop"));
 $("#menuButton").addEventListener("click", () => document.body.classList.toggle("mobile-menu-open"));
@@ -1585,5 +1932,6 @@ setRoute(location.hash.replace("#", "") || (isAdminPortal ? "admin" : "shop"));
 loadProducts({ silent: true }).finally(async () => {
   await loadAccountOrders();
   await loadAdminOrders();
+  await loadAdminCoupons();
   renderAll();
 });

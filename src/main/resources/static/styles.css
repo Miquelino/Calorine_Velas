@@ -12,6 +12,210 @@
   font-family: Georgia, "Times New Roman", serif;
 }
 
+.admin-order-card {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.admin-order-summary {
+  min-width: 0;
+}
+
+.admin-order-summary .eyebrow,
+.admin-order-summary h3,
+.admin-order-summary p {
+  margin: 0;
+}
+
+.admin-order-summary h3 {
+  margin-top: 4px;
+  font-size: 1.25rem;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.admin-order-summary p {
+  margin-top: 5px;
+  line-height: 1.35;
+}
+
+.admin-order-state {
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.admin-order-state .status-pill {
+  display: inline-grid;
+  min-width: 118px;
+  gap: 2px;
+  justify-items: start;
+  padding: 7px 10px;
+  line-height: 1.15;
+}
+
+.admin-order-state .status-pill small {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.compact-select {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.compact-select select {
+  min-height: 38px;
+  min-width: 150px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fffdfa;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  text-transform: none;
+}
+
+.admin-view[data-admin-view="orders"] .admin-orders-layout {
+  grid-template-columns: 1fr;
+}
+
+.admin-view[data-admin-view="orders"] .admin-order-card {
+  width: 100%;
+  cursor: pointer;
+}
+
+.admin-view[data-admin-view="orders"] .admin-order-card:focus {
+  outline: 3px solid rgba(182, 73, 56, 0.18);
+  outline-offset: 2px;
+}
+
+.admin-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-section-head h3,
+.admin-section-head p {
+  margin: 0;
+}
+
+.admin-section-head .primary-action,
+.admin-section-head .secondary-action {
+  width: auto;
+  min-height: 44px;
+  padding: 0 18px;
+}
+
+.admin-products-grid.single {
+  grid-template-columns: minmax(0, 760px);
+}
+
+.admin-order-detail.inline {
+  position: static;
+}
+
+.admin-products-grid.single {
+  grid-template-columns: 1fr;
+}
+
+.admin-products-grid.single .admin-form {
+  width: 100%;
+  max-width: none;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.form-actions .primary-action,
+.form-actions .secondary-action {
+  width: auto;
+  min-width: 138px;
+}
+
+.admin-item.is-low-stock {
+  border-color: #d9a39b;
+  background: #fff6f4;
+}
+
+.admin-item.is-low-stock h3,
+.admin-item.is-low-stock strong {
+  color: #96372f;
+}
+
+.product-admin-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.stock-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 5px 10px;
+  border: 1px solid #d9a39b;
+  border-radius: 999px;
+  background: #ffe9e5;
+  color: #96372f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-flow-warning {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid #c58a24;
+  border-radius: 6px;
+  background: #fff6df;
+  color: #6d4b13;
+  font-weight: 800;
+}
+
+.admin-order-history article {
+  display: grid;
+  grid-template-columns: 138px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.admin-order-history time {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.admin-order-history strong {
+  display: block;
+  line-height: 1.35;
+}
+
+.admin-order-history article p {
+  margin: 6px 0 0;
+}
+
+@media (max-width: 760px) {
+  .admin-order-history article {
+    grid-template-columns: 1fr;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1014,6 +1218,41 @@ label {
   border: 1px solid rgba(229, 204, 188, 0.9);
   border-radius: 8px;
   background: #fff;
+}
+
+.admin-order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0;
+}
+
+.admin-order-actions .primary-action,
+.admin-order-actions .secondary-action {
+  width: auto;
+  min-height: 42px;
+  padding: 0 18px;
+}
+
+.admin-order-history {
+  padding: 12px;
+  border: 1px solid rgba(229, 204, 188, 0.9);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.admin-order-history article {
+  border-top: 1px solid rgba(229, 204, 188, 0.9);
+  padding: 10px 0;
+}
+
+.admin-order-history article:first-of-type {
+  border-top: 0;
+}
+
+.admin-order-history span,
+.admin-order-history p {
+  color: var(--muted);
 }
 
 .admin-locked {
@@ -3133,5 +3372,92 @@ button:disabled {
   .review-product-summary img {
     height: 100%;
     min-height: 130px;
+  }
+}
+
+/* Admin order flow layout overrides */
+.admin-order-card {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.admin-order-summary {
+  min-width: 0;
+}
+
+.admin-order-summary .eyebrow,
+.admin-order-summary h3,
+.admin-order-summary p {
+  margin: 0;
+}
+
+.admin-order-summary h3 {
+  margin-top: 4px;
+  font-size: 1.25rem;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.admin-order-summary p {
+  margin-top: 5px;
+  line-height: 1.35;
+}
+
+.admin-order-state {
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.admin-order-state .status-pill {
+  display: inline-grid;
+  min-width: 118px;
+  gap: 2px;
+  justify-items: start;
+  padding: 7px 10px;
+  line-height: 1.15;
+}
+
+.admin-order-state .status-pill small {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-flow-warning {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid #c58a24;
+  border-radius: 6px;
+  background: #fff6df;
+  color: #6d4b13;
+  font-weight: 800;
+}
+
+.admin-order-history article {
+  display: grid;
+  grid-template-columns: 138px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.admin-order-history time {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.admin-order-history strong {
+  display: block;
+  line-height: 1.35;
+}
+
+.admin-order-history article p {
+  margin: 6px 0 0;
+}
+
+@media (max-width: 760px) {
+  .admin-order-history article {
+    grid-template-columns: 1fr;
   }
 }

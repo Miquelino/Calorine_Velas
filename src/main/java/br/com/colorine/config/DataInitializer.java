@@ -1,9 +1,12 @@
 package br.com.colorine.config;
 
 import br.com.colorine.domain.CandleProduct;
+import br.com.colorine.domain.CouponType;
+import br.com.colorine.domain.DiscountCoupon;
 import br.com.colorine.domain.UserAccount;
 import br.com.colorine.domain.UserRole;
 import br.com.colorine.repository.CandleProductRepository;
+import br.com.colorine.repository.DiscountCouponRepository;
 import br.com.colorine.repository.UserAccountRepository;
 import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +24,7 @@ public class DataInitializer {
   CommandLineRunner seedData(
       UserAccountRepository users,
       CandleProductRepository candles,
+      DiscountCouponRepository coupons,
       PasswordEncoder passwordEncoder,
       @Value("${app.admin.email:admin@calorine.com}") String adminEmail,
       @Value("${app.admin.password:admin123}") String adminPassword
@@ -43,6 +47,13 @@ public class DataInitializer {
         candles.save(candle("Figo Rosado", "Figo, rosas e madeira", "Uma vela marcante para presente, com perfume floral frutado e acabamento artesanal.", "64.90", 10, "rose", "250g", "presente", "aconchegante"));
         candles.save(candle("Mar de Linho", "Algodao, sal e cedro", "Fresca e limpa, perfeita para sala, lavabo e ambientes que pedem leveza.", "59.90", 14, "ocean", "250g", "classica", "relaxante"));
       }
+
+      if (!coupons.existsByCodeIgnoreCase("CALORINE10")) {
+        coupons.save(coupon("CALORINE10", CouponType.PERCENTAGE, "10.00", "0.00"));
+      }
+      if (!coupons.existsByCodeIgnoreCase("FRETEGRATIS")) {
+        coupons.save(coupon("FRETEGRATIS", CouponType.FREE_SHIPPING, "0.00", "180.00"));
+      }
     };
   }
 
@@ -60,5 +71,15 @@ public class DataInitializer {
     candle.setMood(mood);
     candle.setActive(true);
     return candle;
+  }
+
+  private DiscountCoupon coupon(String code, CouponType type, String value, String minimumSubtotal) {
+    DiscountCoupon coupon = new DiscountCoupon();
+    coupon.setCode(code);
+    coupon.setType(type);
+    coupon.setValue(new BigDecimal(value));
+    coupon.setMinimumSubtotal(new BigDecimal(minimumSubtotal));
+    coupon.setActive(true);
+    return coupon;
   }
 }

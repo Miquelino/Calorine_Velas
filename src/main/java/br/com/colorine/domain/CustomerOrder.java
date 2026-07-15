@@ -31,12 +31,19 @@ public class CustomerOrder {
   @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<OrderItem> items = new ArrayList<>();
 
+  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<OrderEvent> events = new ArrayList<>();
+
   @Column(nullable = false, length = 160)
   private String deliveryAddress;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 30)
   private PaymentMethod paymentMethod;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 30)
+  private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 30)
@@ -82,10 +89,14 @@ public class CustomerOrder {
   public void setCustomer(UserAccount customer) { this.customer = customer; }
   public List<OrderItem> getItems() { return items; }
   public void setItems(List<OrderItem> items) { this.items = items; }
+  public List<OrderEvent> getEvents() { return events; }
+  public void setEvents(List<OrderEvent> events) { this.events = events; }
   public String getDeliveryAddress() { return deliveryAddress; }
   public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
   public PaymentMethod getPaymentMethod() { return paymentMethod; }
   public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
+  public PaymentStatus getPaymentStatus() { return paymentStatus; }
+  public void setPaymentStatus(PaymentStatus paymentStatus) { this.paymentStatus = paymentStatus; }
   public OrderStatus getStatus() { return status; }
   public void setStatus(OrderStatus status) { this.status = status; }
   public BigDecimal getTotal() { return total; }
@@ -116,5 +127,13 @@ public class CustomerOrder {
   public void addItem(OrderItem item) {
     items.add(item);
     item.setOrder(this);
+  }
+
+  public void addEvent(String title, String description) {
+    OrderEvent event = new OrderEvent();
+    event.setTitle(title);
+    event.setDescription(description);
+    event.setOrder(this);
+    events.add(event);
   }
 }

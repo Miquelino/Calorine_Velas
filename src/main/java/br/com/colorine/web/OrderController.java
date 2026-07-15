@@ -64,4 +64,10 @@ public class OrderController {
   public OrderResponse updateStatus(@PathVariable("id") Long id, @Valid @RequestBody OrderStatusRequest request) {
     return orderService.updateStatus(id, request.status());
   }
+
+  @PutMapping("/{id}/cancel")
+  @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+  public OrderResponse cancel(@PathVariable("id") Long id, Authentication authentication) {
+    return orderService.cancel(id, securityService.currentUser(authentication));
+  }
 }

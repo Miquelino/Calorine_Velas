@@ -44,7 +44,7 @@ public class SecurityConfig {
               response.getWriter().write("{\"message\":\"Voce nao tem permissao para acessar este recurso.\"}");
             }))
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/", "/index.html", "/styles.css", "/app.js", "/*.png", "/*.jpg", "/*.jpeg", "/*.webp", "/favicon.ico").permitAll()
+            .requestMatchers("/", "/index.html", "/styles.css", "/app.js", "/*.png", "/*.jpg", "/*.jpeg", "/*.webp", "/favicon.ico", "/uploads/**").permitAll()
             .requestMatchers("/h2-console/**").permitAll()
             .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register").permitAll()
